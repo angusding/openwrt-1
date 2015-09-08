@@ -35,14 +35,13 @@ CMAKE_OPTIONS += \
 
 # Note: GCC 4.6 and 4.8 dont have complete C++11 support
 #       Please use GCC 4.9 or higher to compile
-#       Don't use regular expression when compiling with GCC 4.8
 define Package/DNSPing
 	SECTION:=net
 	CATEGORY:=Network
 	TITLE:=Ping with DNS requesting.
 	URL:=https://github.com/chengr28/DNSPing
 	DEPENDS:=+libstdcpp \
-		@GCC_VERSION_4_6:BROKEN
+		@GCC_VERSION_4_6:BROKEN @GCC_VERSION_4_8:BROKEN
 endef
 
 

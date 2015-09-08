@@ -7,13 +7,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=pcap-dnsproxy
-PKG_VERSION:=0.4.3.2
+PKG_VERSION:=0.4.3.3
 PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/chengr28/Pcap_DNSProxy.git
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_VERSION:=8bc14a2b5e570a07a7e26afea5110e979d5d95b1
+PKG_SOURCE_VERSION:=cdefa0f9a101a9eb2225c05a48205cd153d47917
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
 
 PKG_LICENSE:=GPL-2.0
@@ -46,7 +46,9 @@ endef
 
 # Note: GCC 4.6 and 4.8 dont have complete C++11 support
 #       Please use GCC 4.9 or higher to compile
-#       Don't use regular expression when compiling with GCC 4.8
+# uclibcxx is uClibc++, which stands for C++ library for embedded systems.
+# libstdcpp is shipped by GCC project, which usually takes more space than uClibc++.
+# but it has more useful features we need, i.e. full regular expression support.
 define Package/pcap-dnsproxy
 	SECTION:=net
 	CATEGORY:=Network
@@ -54,7 +56,7 @@ define Package/pcap-dnsproxy
 	URL:=https://github.com/chengr28/Pcap_DNSProxy
 	DEPENDS:=+libpthread +libstdcpp +libpcap \
 		+PACKAGE_pcap-dnsproxy_libsodium:libsodium \
-		@GCC_VERSION_4_6:BROKEN
+		@GCC_VERSION_4_6:BROKEN @GCC_VERSION_4_8:BROKEN
 endef
 
 define Package/pcap-dnsproxy/conffiles
