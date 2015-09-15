@@ -53,10 +53,31 @@ define Build/mktplinkfw
 		$(if $(findstring sysupgrade,$1),-s) && mv $@.new $@ || rm -f $@
 endef
 
+define Build/mktplinkfw-chn-v2
+	-$(STAGING_DIR_HOST)/bin/mktplinkfw \
+		-H $(TPLINK_HWID) -W $(TPLINK_HWREV) -F $(TPLINK_FLASHLAYOUT) -N OpenWrt -V $(REVISION) -m 2 \
+		-k $(word 1,$^) \
+		-r $@ \
+		-o $@.new \
+		-j -X 0x40000 \
+		-a $(call rootfs_align,$(FILESYSTEM)) \
+		$(if $(findstring sysupgrade,$1),-s) && mv $@.new $@ || rm -f $@
+endef
+
 # -c combined image
 define Build/mktplinkfw-initramfs
 	$(STAGING_DIR_HOST)/bin/mktplinkfw \
 		-H $(TPLINK_HWID) -W $(TPLINK_HWREV) -F $(TPLINK_FLASHLAYOUT) -N OpenWrt -V $(REVISION) \
+		-k $@ \
+		-o $@.new \
+		-s -S \
+		-c
+	@mv $@.new $@
+endef
+
+define Build/mktplinkfw-initramfs-chn-v2
+	$(STAGING_DIR_HOST)/bin/mktplinkfw \
+		-H $(TPLINK_HWID) -W $(TPLINK_HWREV) -F $(TPLINK_FLASHLAYOUT) -N OpenWrt -V $(REVISION) -m 2 \
 		-k $@ \
 		-o $@.new \
 		-s -S \
@@ -243,6 +264,15 @@ define Device/tplink
   IMAGE/factory.bin := append-rootfs | mktplinkfw factory
 endef
 
+define Device/tplink-chn-v2
+  TPLINK_HWREV := 0x1
+  KERNEL := kernel-bin | patch-cmdline | lzma
+  KERNEL_INITRAMFS := kernel-bin | patch-cmdline | lzma | mktplinkfw-initramfs-chn-v2
+  IMAGES := sysupgrade.bin factory.bin
+  IMAGE/sysupgrade.bin := append-rootfs | mktplinkfw-chn-v2 sysupgrade
+  IMAGE/factory.bin := append-rootfs | mktplinkfw-chn-v2 factory
+endef
+
 define Device/tplink-nolzma
 $(Device/tplink)
   LOADER_FLASH_OFFS := 0x22000
@@ -280,6 +310,12 @@ define Device/tplink-16mlzma
 $(Device/tplink)
   TPLINK_FLASHLAYOUT := 16Mlzma
   IMAGE_SIZE := 15872k
+endef
+
+define Device/tplink-chn-v2-4mlzma
+$(Device/tplink-chn-v2)
+  TPLINK_FLASHLAYOUT := 4Mlzma
+  IMAGE_SIZE := 3904k
 endef
 
 define Device/tl-wr2041n-v1
@@ -324,7 +360,15 @@ define Device/mw4530r-v1
 $(Device/tl-wdr4300-v1)
   TPLINK_HWID := 0x45300001
 endef
-TARGET_DEVICES += tl-wdr3500-v1 tl-wdr3600-v1 tl-wr2041n-v1 tl-wdr4300-v1 tl-wdr4300-v1-il tl-wdr4310-v1 mw4530r-v1
+
+define Device/tl-wdr3320-v2
+$(Device/tplink-chn-v2-4mlzma)
+  BOARDNAME = TL-WDR3320-v2
+  DEVICE_PROFILE = TLWDR3320V2
+  TPLINK_HWID := 0x33200002
+endef
+
+TARGET_DEVICES += tl-wdr3500-v1 tl-wdr3600-v1 tl-wdr4300-v1 tl-wdr4300-v1-il tl-wdr4310-v1 mw4530r-v1 tl-wdr3320-v2 tl-wr2041n-v1
 
 define Device/archer-c5
     $(Device/tplink-16mlzma)
@@ -2171,6 +2215,7 @@ $(eval $(call SingleProfile,OpenMesh,squashfs-only,OM2P,om2p,,,,OM2P))
 $(eval $(call SingleProfile,OpenMesh,squashfs-only,OM5P,om5p,,,,OM5P))
 $(eval $(call SingleProfile,OpenMesh,squashfs-only,MR600,mr600,,,,MR600))
 $(eval $(call SingleProfile,OpenMesh,squashfs-only,MR900,mr900,,,,MR900))
+$(eval $(call SingleProfile,OpenMesh,squashfs-only,MR1750,mr1750,,,,MR1750))
 
 $(eval $(call SingleProfile,PB4X,128k,ALL0305,all0305,ALL0305,ttyS0,115200))
 $(eval $(call SingleProfile,PB4X,128k,EAP7660D,eap7660d,EAP7660D,ttyS0,115200))
@@ -2248,7 +2293,7 @@ $(eval $(call MultiProfile,AP143,AP143_8M AP143_16M))
 $(eval $(call MultiProfile,AP147,AP147_010))
 $(eval $(call MultiProfile,DIR615IX,DIR615I1 DIR615I3))
 $(eval $(call MultiProfile,EWDORIN, EWDORINAP EWDORINRT EWDORIN16M))
-$(eval $(call MultiProfile,OPENMESH,OM2P OM5P MR600 MR900))
+$(eval $(call MultiProfile,OPENMESH,OM2P OM5P MR600 MR900 MR1750))
 $(eval $(call MultiProfile,TEW652BRP,TEW652BRP_FW TEW652BRP_RECOVERY))
 $(eval $(call MultiProfile,QIHOO360,QIHOO36016M QIHOO360FLASH2 QIHOO36032M))
 $(eval $(call MultiProfile,TLMR3220,TLMR3220V1))
