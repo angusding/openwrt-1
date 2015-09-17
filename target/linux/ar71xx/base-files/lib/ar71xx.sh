@@ -332,6 +332,9 @@ ar71xx_board_detect() {
 	*"AirGateway")
 		name="airgateway"
 		;;
+	*"AirGateway Pro")
+		name="airgatewaypro"
+		;;
 	*"AirRouter")
 		name="airrouter"
 		;;
@@ -376,6 +379,9 @@ ar71xx_board_detect() {
 		;;
 	*"AP147-010 reference board")
 		name="ap147-010"
+		;;
+	*"AP152 reference board")
+		name="ap152"
 		;;
 	*AP81)
 		name="ap81"
