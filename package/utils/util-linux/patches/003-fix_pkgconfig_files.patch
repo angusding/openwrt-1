@@ -10,7 +10,7 @@
  endif # BUILD_LIBUUID
 --- a/configure.ac
 +++ b/configure.ac
-@@ -1908,18 +1908,22 @@ AC_CONFIG_HEADERS([config.h])
+@@ -2001,18 +2001,22 @@ AC_CONFIG_HEADERS([config.h])
  #
  AC_CONFIG_FILES([
  Makefile
