@@ -27,13 +27,13 @@ include $(INCLUDE_DIR)/package.mk
 define Package/xsocks
 	SECTION:=net
 	CATEGORY:=Network
-	TITLE:=A secure and fast proxy for protect your network traffic
+	TITLE:=A secure and fast proxy to protect your network traffic
 	URL:=https://github.com/lparam/xsocks
-	DEPENDS:=+libpthread +librt @BROKEN
+	DEPENDS:=+libpthread +librt
 endef
 
 define Package/xsocks/description
-  xsocks is a secure and fast proxy for protect your network traffic
+  xsocks is a secure and fast proxy to protect your network traffic
 endef
 
 define Package/xsocks/install
