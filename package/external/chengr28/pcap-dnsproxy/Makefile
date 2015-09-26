@@ -7,13 +7,13 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=pcap-dnsproxy
-PKG_VERSION:=0.4.3.5
-PKG_RELEASE:=2
+PKG_VERSION:=0.4.4
+PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=https://github.com/chengr28/Pcap_DNSProxy.git
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_VERSION:=330b2050455039edc2646f29e3ceb1a4e392376a
+PKG_SOURCE_VERSION:=57f1050dc5611dfb0822d0c461299f8f5d6a84be
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
 
 PKG_LICENSE:=GPL-2.0
@@ -100,7 +100,6 @@ define Package/pcap-dnsproxy/install
 	$(INSTALL_DIR) $(1)/etc/pcap-dnsproxy
 	$(SED) 's,Listen Port = 53,Listen Port = $(CONFIG_PCAP_DNSPROXY_LISTENPORT),g'                          $(PKG_BUILD_DIR)/Source/ExampleConfig/Config.ini
 	$(SED) 's,Log Maximum Size = 8MB,Log Maximum Size = 50KB,g'                                             $(PKG_BUILD_DIR)/Source/ExampleConfig/Config.ini
-	$(SED) 's,EDNS Label = 0,EDNS Label = 1,g'                                                              $(PKG_BUILD_DIR)/Source/ExampleConfig/Config.ini
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/Source/ExampleConfig/Config.ini $(1)/etc/pcap-dnsproxy/Config.conf
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/Source/ExampleConfig/Hosts.ini $(1)/etc/pcap-dnsproxy/Hosts.conf
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/Source/ExampleConfig/IPFilter.ini $(1)/etc/pcap-dnsproxy/IPFilter.conf
