@@ -15,7 +15,7 @@
  	-std=gnu99 \
 @@ -70,7 +70,7 @@ EXTRA_CFLAGS =
  CPPFLAGS += -Isrc
- CPPFLAGS += -I3rd/libuv/include -I3rd/libsodium/src/libsodium/include -I3rd/c-ares/
+ CPPFLAGS += -I3rd/libuv/include -I3rd/libsodium/src/libsodium/include -I3rd/c-ares -I3rd/libcork/include -I3rd/libipset/include
  
 -LDFLAGS = -Wl,--gc-sections
 +LDFLAGS += -Wl,--gc-sections
