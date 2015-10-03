@@ -15,6 +15,10 @@ choice
 		select UCLIBC_VERSION_SNAPSHOT
 		bool "uClibc snapshot (2015-06-15)"
 
+	config UCLIBC_USE_VERSION_NG
+		select UCLIBC_VERSION_NG
+		bool "uClibc-ng"
+
 endchoice
 
 # Debug version.
