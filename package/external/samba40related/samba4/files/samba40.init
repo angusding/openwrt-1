@@ -27,6 +27,7 @@ smb_header() {
 	local name workgroup description charset domain
 	local hostname="$(uci_get system.@system[0].hostname)"
 
+	config_get ENABLED "$section" "enabled"
 	config_get name        $1 name        "${hostname:-OpenWrt}"
 	config_get workgroup   $1 workgroup   "${hostname:-OpenWrt}"
 	config_get description $1 description "Samba on ${hostname:-OpenWrt}"
@@ -111,10 +112,14 @@ start() {
 	config_foreach smb_header samba
 	config_foreach smb_add_share sambashare
 
-	service_start /usr/sbin/smbd -D
-	[ "$DISABLENB" != "1" ] && {
-		service_start /usr/sbin/nmbd -D
-	}
+	if [ "1" = "$ENABLED" ] || [ "on" = "$ENABLED" ] || [ "true" = "$ENABLED" ]; then
+		service_start /usr/sbin/smbd -D
+		[ "$DISABLENB" != "1" ] && {
+			service_start /usr/sbin/nmbd -D
+		}
+	else
+		echo "samba4 is disabled"
+	fi
 }
 
 stop() {
