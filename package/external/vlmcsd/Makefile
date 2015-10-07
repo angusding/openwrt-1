@@ -8,7 +8,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=vlmcsd
 PKG_VERSION:=svn812
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)/$(PKG_NAME)-$(PKG_VERSION)
 
@@ -32,10 +32,10 @@ define Build/Prepare
 	$(call Build/Prepare/Default)
 endef
 
-# AUXV=1          Use /proc/self/auxv (requires Linux with glibc >= 2.16 or musl.)
+# AUXV=1          Use /proc/self/auxv (**requires Linux with glibc >= 2.16 or musl**.)
 MAKE_FLAGS+= \
 	VERBOSE=3 \
-	AUXV=1
+	$(if $(CONFIG_USE_MUSL)$(CONFIG_GLIBC_VERSION_2_21),AUXV=1)
 
 #-D_PEDANTIC      Report rare error/warning conditions instead of silently ignoring them.
 TARGET_CFLAGS+= \
