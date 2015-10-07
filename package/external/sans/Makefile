@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 PKG_NAME:=sans
 # PKG_VERSION comes from configure.ac
 PKG_VERSION:=0.1.0
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 PKG_REV:=e391e9fdeb77cb5b7614f355d21856b959c8995e
 
 PKG_SOURCE_PROTO:=git
