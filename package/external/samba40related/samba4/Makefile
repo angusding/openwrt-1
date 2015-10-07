@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=samba40
 PKG_VERSION:=4.0.26
-PKG_RELEASE:=7
+PKG_RELEASE:=8
 
 PKG_SOURCE_URL:=http://ftp.samba.org/pub/samba \
 	http://ftp.samba.org/pub/samba/old-versions
@@ -38,7 +38,7 @@ define Package/samba40-server
   TITLE:=Samba $(PKG_VERSION) SMB/CIFS server
   URL:=http://www.samba.org/
   VARIANT:=samba40-server
-  DEPENDS:=+zlib
+  DEPENDS:=+zlib +libuuid +libaio +libpthread $(ICONV_DEPENDS)
 endef
 
 define Package/samba40-client
@@ -66,14 +66,21 @@ endef
 
 TARGET_CFLAGS += \
 	-D_GNU_SOURCE \
-	-ffunction-sections -fdata-sections
+	-D__location__=\\\"\\\" \
+	-ffunction-sections -fdata-sections \
+	-DACTIVE_DIRECTORY \
+	-DDFS_SUPPORT \
+	-DNETLOGON_SUPPORT \
+	-DSAMR_SUPPORT \
+	-DLSA_SUPPORT
 
 TARGET_LDFLAGS += -Wl,--gc-sections
+# maybe we don't need them =>  -laio -ldl
 
-# can NOT detect endian while cross compiling, now for ARM(little endian)
-# also should do some sizeof check before
+# XXX: can NOT detect endian while cross compiling, now for ARM(little endian)
+#      also should do some sizeof check
 
-# should check before compile
+# XXX: You should check these values before compiling this Package
 #	samba_cv_big_endian=no \
 	samba_cv_little_endian=yes \
 	samba_cv_SIZEOF_BLKCNT_T_4=no \
@@ -127,8 +134,8 @@ CONFIGURE_VARS += \
 	samba_cv_linux_getgrouplist_ok=yes \
 	ac_cv_header_zlib_h=yes \
 	samba_cv_zlib_1_2_3=yes
-# changed ac_cv_header_zlib_h && samba_cv_zlib_1_2_3
-# due to PKG_RELRO_FULL delete '--disable-relro'
+# In general, we have a proper zlib
+# due to PKG_RELRO_FULL, deleted '--disable-relro'
 CONFIGURE_ARGS += \
 	--exec-prefix=/usr \
 	--prefix=/ \
@@ -138,15 +145,17 @@ CONFIGURE_ARGS += \
 	--disable-static \
 	--disable-swat \
 	--disable-shared-libs \
+	--with-codepagedir=/etc/samba \
 	--with-configdir=/etc/samba \
 	--with-included-iniparser \
 	--with-included-popt \
 	--with-lockdir=/var/lock \
 	--with-logfilebase=/var/log \
+	--with-nmbdsocketdir=/var/nmbd \
 	--with-piddir=/var/run \
 	--with-privatedir=/etc/samba \
 	--with-sendfile-support \
-	--without-aio-support \
+	--with-aio-support \
 	--without-cluster-support \
 	--without-pam \
 	--without-winbind \
@@ -161,9 +170,8 @@ CONFIGURE_ARGS += \
 	--with-libiconv="$(ICONV_PREFIX)" \
 	--without-acl-support \
 	--without-quotas \
-	--without-syslog \
-	--with-shared-modules=pdb_tdbsam,pdb_wbc_sam,idmap_nss,nss_info_template,auth_winbind,auth_wbc,auth_domain,vfs \
-	--with-static-modules=vfs_default
+	--with-syslog \
+	--with-shared-modules=pdb_tdbsam,pdb_wbc_sam,idmap_nss,nss_info_template,auth_winbind,auth_wbc,auth_domain
 
 MAKE_FLAGS += DYNEXP= PICFLAG= MODULES=
 
