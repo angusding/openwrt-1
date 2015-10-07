@@ -134,6 +134,7 @@ CONFIGURE_VARS += \
 	samba_cv_HAVE_GETTIMEOFDAY_TZ=yes \
 	samba_cv_HAVE_IFACE_IFCONF=yes \
 	samba_cv_HAVE_KERNEL_OPLOCKS_LINUX=yes \
+	$(if $(CONFIG_KERNEL_AIO),samba_cv_HAVE_LINUX_KERNEL_AIO=yes) \
 	samba_cv_HAVE_SECURE_MKSTEMP=yes \
 	samba_cv_HAVE_WRFILE_KEYTAB=no \
 	samba_cv_USE_SETRESUID=yes \
