@@ -38,7 +38,7 @@ define Package/samba40-server
   TITLE:=Samba $(PKG_VERSION) SMB/CIFS server
   URL:=http://www.samba.org/
   VARIANT:=samba40-server
-  DEPENDS:=+zlib +libuuid +libaio +libpthread $(ICONV_DEPENDS)
+  DEPENDS:=+zlib +libuuid +KERNEL_AIO:libaio +libpthread $(ICONV_DEPENDS)
 endef
 
 define Package/samba40-client
@@ -46,7 +46,7 @@ define Package/samba40-client
   CATEGORY:=Network
   TITLE:=Samba $(PKG_VERSION) SMB/CIFS client
   URL:=http://www.samba.org/
-#  DEPENDS:=+libreadline +libncurses +libopenldap-sals +krb5-mit-libs +libaio +zlib
+#  DEPENDS:=+libreadline +libncurses +libopenldap-sals +krb5-mit-libs +KERNEL_AIO:libaio +zlib
 endef
 
 define Package/samba40-server/description
@@ -155,7 +155,7 @@ CONFIGURE_ARGS += \
 	--with-piddir=/var/run \
 	--with-privatedir=/etc/samba \
 	--with-sendfile-support \
-	--with-aio-support \
+	$(if $(CONFIG_KERNEL_AIO),--with-aio-support,--without-aio-support) \
 	--without-cluster-support \
 	--without-pam \
 	--without-winbind \
