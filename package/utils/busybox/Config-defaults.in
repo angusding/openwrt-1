@@ -1386,13 +1386,13 @@ config BUSYBOX_DEFAULT_FDFORMAT
 	default n
 config BUSYBOX_DEFAULT_FDISK
 	bool
-	default n
+	default y
 config BUSYBOX_DEFAULT_FDISK_SUPPORT_LARGE_DISKS
 	bool
-	default n
+	default y
 config BUSYBOX_DEFAULT_FEATURE_FDISK_WRITABLE
 	bool
-	default n
+	default y
 config BUSYBOX_DEFAULT_FEATURE_AIX_LABEL
 	bool
 	default n
@@ -1407,10 +1407,10 @@ config BUSYBOX_DEFAULT_FEATURE_OSF_LABEL
 	default n
 config BUSYBOX_DEFAULT_FEATURE_GPT_LABEL
 	bool
-	default n
+	default y
 config BUSYBOX_DEFAULT_FEATURE_FDISK_ADVANCED
 	bool
-	default n
+	default y
 config BUSYBOX_DEFAULT_FINDFS
 	bool
 	default n
