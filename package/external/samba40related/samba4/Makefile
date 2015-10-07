@@ -38,7 +38,8 @@ define Package/samba40-server
   TITLE:=Samba $(PKG_VERSION) SMB/CIFS server
   URL:=http://www.samba.org/
   VARIANT:=samba40-server
-  DEPENDS:=+zlib +libuuid +KERNEL_AIO:libaio +libpthread $(ICONV_DEPENDS)
+  DEPENDS:=+zlib +libuuid +libpthread $(ICONV_DEPENDS)
+  # Note on libaio: Support for kernel AIO has been included in the 2.6 Linux kernel, so we don't have to include this pkg anymore.
 endef
 
 define Package/samba40-client
@@ -46,7 +47,7 @@ define Package/samba40-client
   CATEGORY:=Network
   TITLE:=Samba $(PKG_VERSION) SMB/CIFS client
   URL:=http://www.samba.org/
-#  DEPENDS:=+libreadline +libncurses +libopenldap-sals +krb5-mit-libs +KERNEL_AIO:libaio +zlib
+#  DEPENDS:=+libreadline +libncurses +libopenldap-sals +krb5-mit-libs +zlib
 endef
 
 define Package/samba40-server/description
@@ -54,6 +55,15 @@ define Package/samba40-server/description
  SMB protocol for UNIX systems, allowing you to serve files and printers to
  Windows, NT, OS/2 and DOS clients. This protocol is sometimes also referred
  to as the LanManager or Netbios protocol.
+endef
+
+define Package/samba40-server/config
+	if PACKAGE_samba40-server
+	config PACKAGE_samba40-server_asyncio
+		bool "Build with Asynchronous I/O support."
+		select KERNEL_AIO
+		default n
+	endif
 endef
 
 define Package/luci-app-$(PKG_NAME)
