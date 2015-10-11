@@ -18,12 +18,3 @@
  
  #endif // INI_FILE
  
-@@ -205,7 +205,7 @@
-  *    It it safe to try this by yourself. vlmcsd won't compile if your system doesn't support it.
-  */
- 
--//#define USE_AUXV
-+#define USE_AUXV
- 
- #endif // USE_AUXV
- 
