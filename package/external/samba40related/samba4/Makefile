@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=samba40
 PKG_VERSION:=4.0.26
-PKG_RELEASE:=8
+PKG_RELEASE:=9
 
 PKG_SOURCE_URL:=http://ftp.samba.org/pub/samba \
 	http://ftp.samba.org/pub/samba/old-versions
@@ -62,6 +62,7 @@ define Package/samba40-server/config
 	config PACKAGE_samba40-server_asyncio
 		bool "Build with Asynchronous I/O support."
 		select KERNEL_AIO
+		select PACKAGE_libaio
 		default n
 	endif
 endef
@@ -134,7 +135,6 @@ CONFIGURE_VARS += \
 	samba_cv_HAVE_GETTIMEOFDAY_TZ=yes \
 	samba_cv_HAVE_IFACE_IFCONF=yes \
 	samba_cv_HAVE_KERNEL_OPLOCKS_LINUX=yes \
-	$(if $(CONFIG_KERNEL_AIO),samba_cv_HAVE_LINUX_KERNEL_AIO=yes) \
 	samba_cv_HAVE_SECURE_MKSTEMP=yes \
 	samba_cv_HAVE_WRFILE_KEYTAB=no \
 	samba_cv_USE_SETRESUID=yes \
@@ -166,7 +166,7 @@ CONFIGURE_ARGS += \
 	--with-piddir=/var/run \
 	--with-privatedir=/etc/samba \
 	--with-sendfile-support \
-	$(if $(CONFIG_KERNEL_AIO),--with-aio-support,--without-aio-support) \
+	$(if $(CONFIG_PACKAGE_samba40-server_asyncio),--with-aio-support,--without-aio-support) \
 	--without-cluster-support \
 	--without-pam \
 	--without-winbind \
@@ -191,6 +191,8 @@ define Package/samba40-server/install
 	$(INSTALL_DATA) ./files/samba40.config $(1)/etc/config/samba4
 	$(INSTALL_DIR) $(1)/etc/samba
 	$(INSTALL_DATA) ./files/smb.conf.template $(1)/etc/samba
+	$(if $(CONFIG_PACKAGE_samba40-server_asyncio),$(SED) "s/aio read size = 0/aio read size = 16384/g" $(1)/etc/samba/smb.conf.template)
+	$(if $(CONFIG_PACKAGE_samba40-server_asyncio),$(SED) "s/aio write size = 0/aio write size = 16384/g" $(1)/etc/samba/smb.conf.template)
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/codepages/lowcase.dat $(1)/etc/samba
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/codepages/upcase.dat $(1)/etc/samba
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/codepages/valid.dat $(1)/etc/samba
