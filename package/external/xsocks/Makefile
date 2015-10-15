@@ -8,7 +8,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=xsocks
 PKG_VERSION:=0.3.1
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 PKG_REV:=85f84df30fdcd1516ebc13244eb620abb97f8736
 
 PKG_SOURCE_PROTO:=git
@@ -40,6 +40,8 @@ endef
 define Package/xsocks/install
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/xsocks.init $(1)/etc/init.d/xsocks
+	$(INSTALL_DIR) $(1)/etc/xsocks
+	$(INSTALL_CONF) ./files/xsocks.blacklist $(1)/etc/xsocks/black_list
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_DATA) ./files/xsocks.config $(1)/etc/config/xsocks
 	$(INSTALL_DIR) $(1)/usr/bin
