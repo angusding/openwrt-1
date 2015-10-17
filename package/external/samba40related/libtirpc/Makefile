@@ -8,14 +8,14 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=libtirpc
-PKG_VERSION:=0.3.1
-PKG_RELEASE:=1
+PKG_VERSION:=0.3.2
+PKG_RELEASE:=2
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
 PKG_SOURCE_URL:=@SF/libtirpc
-PKG_MD5SUM:=
+PKG_MD5SUM:=373d5ad46b1d19759ec763a9f0afcf4d
 
-PKG_FIXUP:=libtool
+PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk
@@ -29,6 +29,9 @@ define Package/libtirpc
 endef
 
 CONFIGURE_ARGS += --disable-gssapi
+# Info from Buildroot Makefile
+# getrpcby{number,name} are only provided if 'GQ' is defined
+TARGET_CFLAGS += -DGQ
 #CONFIGURE_VARS += \
 	GSSGLUE_LIBS="-lkrb5 -lk5crypto -l:libcom_err.so.3 -lkeyutils -lresolv -gssapi_krb5" \
 	GSSGLUE_CFLAGS=-I$(STAGING_DIR)/usr/include/krb5/
