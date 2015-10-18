@@ -20,7 +20,7 @@ PKG_MD5SUM:=8f6452eca69f8b38f97bb8d8a738180a
 PKG_LICENSE:=GPLv3
 PKG_LICENSE_FILES:=COPYING
 
-PKG_BUILD_DEPENDS:=python-light libtirpc libpopt heimdal/host
+PKG_BUILD_DEPENDS:=python-light libpopt heimdal/host
 
 PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
@@ -35,8 +35,8 @@ define Package/samba43-server
   CATEGORY:=Network
   TITLE:=Samba $(PKG_VERSION) SMB/CIFS server
   URL:=http://www.samba.org/
-  DEPENDS:=+zlib +libuuid +libpthread +libpopt +libtirpc +PACKAGE_samba43-server_asyncio:libaio
-#DEPENDS+= +libreadline
+  DEPENDS:=+zlib +libpthread +libpopt +PACKAGE_samba43-server_asyncio:libaio
+#DEPENDS+= +libreadline +libuuid +libtirpc libtirpc
 endef
 
 define Package/samba43-server/description
@@ -123,6 +123,7 @@ SAMBA43_CACHE := " \
 	\nChecking value of SIGRTMIN: \"34\" \
 	\n"
 # 	\nChecking for the maximum value of the 'time_t' type: OK  <<-- check it, not for sure. It seems musl-libc don't have max time_t
+
 define Build/Configure
 	(cd $(PKG_BUILD_DIR); \
 		echo -e >cache.txt $(SAMBA43_CACHE) " \
@@ -132,7 +133,7 @@ define Build/Configure
 			\nChecking uname sysname type: \"Linux\" \
 			\n" ; \
 		$(CONFIGURE_VARS) \
-		./buildtools/bin/waf configure \
+		./buildtools/bin/waf configure -j$(shell nproc) \
 			--cross-compile \
 			--cross-answers=$(PKG_BUILD_DIR)/cache.txt \
 			--hostcc=$(HOSTCC) \
@@ -154,33 +155,51 @@ define Build/Configure
 			--with-sendfile-support \
 			--without-acl-support \
 			$(if $(CONFIG_PACKAGE_samba43-server_asyncio),--with-aio-support,--without-aio-support) \
+			--without-ads \
 			--without-ad-dc \
 			--without-automount \
 			--without-cluster-support \
 			--without-dnsupdate \
 			--without-fam \
+			--without-gettext \
+			--without-iconv \
+			--without-ldap \
 			--without-pam \
 			--without-pam_smbpass \
 			--without-pie \
 			--without-regedit \
 			--without-systemd \
+			--without-utmp \
 			--without-winbind \
-			--without-dnsupdate \
-			--without-ads \
-			--without-ldap \
-			--nonshared-binary=smbd,nmbd,smbpasswd,smbcontrol,smbtree,smbstatus,smbcquotas,smbcacls,nmblookup,testparm,$(PKG_NAME)_multicall \
-			--with-shared-modules=pdb_tdbsam,pdb_wbc_sam,idmap_nss,nss_info_template,auth_wbc,vfs \
-			--with-static-modules=vfs_default \
+			--nonshared-binary=$(PKG_NAME)_multicall \
+			--with-shared-modules=pdb_tdbsam,pdb_wbc_sam,idmap_nss,nss_info_template,auth_wbc \
 			--without-quotas \
 			--with-syslog \
 			--nopyc \
 			--nopyo \
 	)
 endef
+
 # '--nonshared-binary' works like '--disable-shared-libs' in samba 4.0.26
 # or use '--builtin-libraries' to specify which library to build into.
 # --nonshared-binary=smbd/smbd,nmbd/nmbd,smbpasswd,smbcontrol,smbtree,smbstatus,smbcquotas,smbcacls,nmblookup,testparm,$(PKG_NAME)_multicall
 
+# 'builtin-libraries'
+# smbd_base samba-util tdb talloc param pdb
+# seems don't need: krb5samba
+
+# speed up
+define Build/Compile
+	(cd $(PKG_BUILD_DIR); \
+		./buildtools/bin/waf build -j$(shell nproc) \
+	)
+endef
+
+# remove some useless folders after install
+define Build/Install
+	$(call Build/Install/Default)
+	rm -rf $(PKG_INSTALL_DIR)/var $(PKG_INSTALL_DIR)/etc $(PKG_INSTALL_DIR)/usr/lib/{pkgconfig,python2.7}
+endef
 
 # Make sure the name of multicall binary matches name in 111-multicall-wscript-build.patch
 define Package/samba43-server/install
