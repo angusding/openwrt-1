@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=samba43
 PKG_VERSION:=4.3.0
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 
 PKG_SOURCE_URL:=http://ftp.samba.org/pub/samba \
 	http://ftp.samba.org/pub/samba/old-versions
@@ -20,13 +20,12 @@ PKG_MD5SUM:=8f6452eca69f8b38f97bb8d8a738180a
 PKG_LICENSE:=GPLv3
 PKG_LICENSE_FILES:=COPYING
 
-PKG_BUILD_DEPENDS:=python-light libtirpc libpopt heimdal/host libiconv
+PKG_BUILD_DEPENDS:=python-light libtirpc libpopt heimdal/host
 
 PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk
-include $(INCLUDE_DIR)/nls.mk
 # for "uname release type" check
 include $(INCLUDE_DIR)/kernel.mk
 
@@ -36,7 +35,7 @@ define Package/samba43-server
   CATEGORY:=Network
   TITLE:=Samba $(PKG_VERSION) SMB/CIFS server
   URL:=http://www.samba.org/
-  DEPENDS:=+zlib +libuuid +libpthread +libpopt +libtirpc $(ICONV_DEPENDS)
+  DEPENDS:=+zlib +libuuid +libpthread +libpopt +libtirpc +PACKAGE_samba43-server_asyncio:libaio
 #DEPENDS+= +libreadline
 endef
 
@@ -52,7 +51,6 @@ define Package/samba43-server/config
 	config PACKAGE_samba43-server_asyncio
 		bool "Build with Asynchronous I/O support."
 		select KERNEL_AIO
-		select PACKAGE_libaio
 		default n
 	endif
 endef
@@ -60,6 +58,8 @@ endef
 TARGET_CFLAGS += \
 	-D_GNU_SOURCE \
 	-ffunction-sections -fdata-sections
+
+TARGET_LDFLAGS += -Wl,--gc-sections
 
 # Use host compiled python2 as interpreter
 # Use target python2-config to retrive cflags, ldflags, libs, etc.
@@ -153,7 +153,7 @@ define Build/Configure
 			--with-relro \
 			--with-sendfile-support \
 			--without-acl-support \
-			--without-aio-support \
+			$(if $(CONFIG_PACKAGE_samba43-server_asyncio),--with-aio-support,--without-aio-support) \
 			--without-ad-dc \
 			--without-automount \
 			--without-cluster-support \
@@ -168,16 +168,19 @@ define Build/Configure
 			--without-dnsupdate \
 			--without-ads \
 			--without-ldap \
-			--with-libiconv="$(ICONV_PREFIX)" \
+			--nonshared-binary=smbd,nmbd,smbpasswd,smbcontrol,smbtree,smbstatus,smbcquotas,smbcacls,nmblookup,testparm,$(PKG_NAME)_multicall \
 			--with-shared-modules=pdb_tdbsam,pdb_wbc_sam,idmap_nss,nss_info_template,auth_wbc,vfs \
 			--with-static-modules=vfs_default \
-			--bundled-libraries='!asn1_compile,!compile_et' \
 			--without-quotas \
 			--with-syslog \
 			--nopyc \
 			--nopyo \
 	)
 endef
+# '--nonshared-binary' works like '--disable-shared-libs' in samba 4.0.26
+# or use '--builtin-libraries' to specify which library to build into.
+# --nonshared-binary=smbd/smbd,nmbd/nmbd,smbpasswd,smbcontrol,smbtree,smbstatus,smbcquotas,smbcacls,nmblookup,testparm,$(PKG_NAME)_multicall
+
 
 # Make sure the name of multicall binary matches name in 111-multicall-wscript-build.patch
 define Package/samba43-server/install
