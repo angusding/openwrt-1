@@ -26,7 +26,6 @@ PKG_LICENSE_FILES:=COPYING
 PKG_BUILD_PARALLEL:=1
 
 include $(INCLUDE_DIR)/package.mk
-include $(INCLUDE_DIR)/nls.mk
 
 MAKE_PATH:=source3
 CONFIGURE_PATH:=source3
@@ -39,7 +38,7 @@ define Package/samba40-server
   TITLE:=Samba $(PKG_VERSION) SMB/CIFS server
   URL:=http://www.samba.org/
   VARIANT:=samba40-server
-  DEPENDS:=+zlib +libuuid +libpthread $(ICONV_DEPENDS)
+  DEPENDS:=+zlib +libuuid +libpthread +PACKAGE_samba40-server_asyncio:libaio
   # Note on libaio: Support for kernel AIO has been included in the 2.6 Linux kernel, so we don't have to include this pkg anymore.
 endef
 
@@ -63,7 +62,6 @@ define Package/samba40-server/config
 	config PACKAGE_samba40-server_asyncio
 		bool "Build with Asynchronous I/O support."
 		select KERNEL_AIO
-		select PACKAGE_libaio
 		default n
 	endif
 endef
@@ -179,7 +177,6 @@ CONFIGURE_ARGS += \
 	--without-ads \
 	--without-krb5 \
 	--without-ldap \
-	--with-libiconv="$(ICONV_PREFIX)" \
 	--without-acl-support \
 	--without-quotas \
 	--with-syslog \
