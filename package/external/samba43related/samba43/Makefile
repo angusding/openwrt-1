@@ -26,6 +26,7 @@ PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
 
 include $(INCLUDE_DIR)/package.mk
+include $(INCLUDE_DIR)/nls.mk
 # for "uname release type" check
 include $(INCLUDE_DIR)/kernel.mk
 
@@ -35,7 +36,7 @@ define Package/samba43-server
   CATEGORY:=Network
   TITLE:=Samba $(PKG_VERSION) SMB/CIFS server
   URL:=http://www.samba.org/
-  DEPENDS:=+zlib +libuuid +libpthread +libpopt +libtirpc +libiconv
+  DEPENDS:=+zlib +libuuid +libpthread +libpopt +libtirpc $(ICONV_DEPENDS)
 #DEPENDS+= +libreadline
 endef
 
@@ -167,7 +168,7 @@ define Build/Configure
 			--without-dnsupdate \
 			--without-ads \
 			--without-ldap \
-			--with-libiconv="$(STAGING_DIR)/usr/lib/libiconv-stub" \
+			--with-libiconv="$(ICONV_PREFIX)" \
 			--with-shared-modules=pdb_tdbsam,pdb_wbc_sam,idmap_nss,nss_info_template,auth_wbc,vfs \
 			--with-static-modules=vfs_default \
 			--bundled-libraries='!asn1_compile,!compile_et' \
