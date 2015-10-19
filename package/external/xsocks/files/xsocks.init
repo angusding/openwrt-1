@@ -14,6 +14,7 @@ IP_ROUTE_TABLE_NUMBER=100
 FWMARK="0x01/0x01"
 SETNAME=wall
 CHAIN=XSOCKS
+DNS=8.8.8.8
 BLACK_LIST=/etc/xsocks/black_list
 
 config_load "xsocks"
@@ -31,7 +32,7 @@ start() {
 		mkdir -p /var/run/xsocks
 		xsocks -s $SERVER -k $PASSWORD
 		xtproxy -s $SERVER -k $PASSWORD
-		xforwarder -l 0.0.0.0:5533 -d 8.8.8.8:53 -s $SERVER -k $PASSWORD
+		xforwarder -l 0.0.0.0:5533 -d $DNS:53 -s $SERVER -k $PASSWORD
 	else
 		echo "xsocks is disabled"
 	fi
