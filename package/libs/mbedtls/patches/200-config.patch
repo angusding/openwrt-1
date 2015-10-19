@@ -36,15 +36,6 @@
  
  /**
   * \def MBEDTLS_ECDSA_DETERMINISTIC
-@@ -446,7 +446,7 @@
-  * Enable deterministic ECDSA (RFC 6979).
-  * Standard ECDSA is "fragile" in the sense that lack of entropy when signing
-  * may result in a compromise of the long-term signing key. This is avoided by
-- * the deterministic variant.
-+       DH	* the deterministic variant.
-  *
-  * Requires: MBEDTLS_HMAC_DRBG_C
-  *
 @@ -498,7 +498,7 @@
   *      MBEDTLS_TLS_DHE_PSK_WITH_3DES_EDE_CBC_SHA
   *      MBEDTLS_TLS_DHE_PSK_WITH_RC4_128_SHA
@@ -143,57 +134,3 @@
  
  /**
   * \def MBEDTLS_THREADING_ALT
-@@ -1563,7 +1563,7 @@
-  * This module enables the AES-CCM ciphersuites, if other requisites are
-  * enabled as well.
-  */
--#define MBEDTLS_CCM_C
-+//#define MBEDTLS_CCM_C
- 
- /**
-  * \def MBEDTLS_CERTS_C
-@@ -1575,7 +1575,7 @@
-  *
-  * This module is used for testing (ssl_client/server).
-  */
--#define MBEDTLS_CERTS_C
-+//#define MBEDTLS_CERTS_C
- 
- /**
-  * \def MBEDTLS_CIPHER_C
-@@ -1615,7 +1615,7 @@
-  *
-  * This module provides debugging functions.
-  */
--#define MBEDTLS_DEBUG_C
-+//#define MBEDTLS_DEBUG_C
- 
- /**
-  * \def MBEDTLS_DES_C
-@@ -1655,7 +1655,7 @@
-  * This module is used by the following key exchanges:
-  *      DHE-RSA, DHE-PSK
-  */
--#define MBEDTLS_DHM_C
-+//#define MBEDTLS_DHM_C
- 
- /**
-  * \def MBEDTLS_ECDH_C
-@@ -2045,7 +2045,7 @@
-  * Caller:  library/mbedtls_md.c
-  *
-  */
--#define MBEDTLS_RIPEMD160_C
-+//#define MBEDTLS_RIPEMD160_C
- 
- /**
-  * \def MBEDTLS_RSA_C
-@@ -2343,7 +2343,7 @@
-  * Module:  library/xtea.c
-  * Caller:
-  */
--#define MBEDTLS_XTEA_C
-+//#define MBEDTLS_XTEA_C
- 
- /* \} name SECTION: mbed TLS modules */
- 
