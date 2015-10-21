@@ -20,10 +20,10 @@
      'kuser/kinit.c',
 --- a/source4/heimdal_build/wscript_configure
 +++ b/source4/heimdal_build/wscript_configure
-@@ -168,6 +168,8 @@ conf.define('HAVE_KRB5_PRINCIPAL_SET_REA
- conf.define('HAVE_KRB5_PRINCIPAL_SET_TYPE', 1)
+@@ -169,6 +169,8 @@ conf.define('HAVE_KRB5_PRINCIPAL_SET_TYP
  conf.define('HAVE_KRB5_PRINCIPAL_GET_TYPE', 1)
  conf.define('HAVE_KRB5_WARNX', 1)
+ conf.define('HAVE_KRB5_PROMPT_TYPE', 1)
 +conf.define('USING_SYSTEM_ASN1_COMPILE', 1)
 +conf.define('USING_SYSTEM_COMPILE_ET', 1)
  
