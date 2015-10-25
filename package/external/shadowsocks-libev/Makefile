@@ -9,8 +9,8 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=shadowsocks-libev
 PKG_VERSION:=2.4.0
-PKG_RELEASE:=2
-PKG_REV:=095aa7490cb39d513180d1f756e6751107511f98
+PKG_RELEASE:=3
+PKG_REV:=e51dda2c4ba654676a3109d78a02f24b0d2e92b2
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_VERSION:=$(PKG_REV)
@@ -83,6 +83,8 @@ exit 0
 endef
 
 Package/shadowsocks-libev-spec-polarssl/postinst = $(Package/shadowsocks-libev-spec/postinst)
+
+CONFIGURE_ARGS += --enable-system-shared-lib
 
 ifeq ($(BUILD_VARIANT),polarssl)
 	CONFIGURE_ARGS += --with-crypto-library=polarssl
