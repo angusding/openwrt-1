@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_BRANCH:=trunk
 PKG_SOURCE_URL:=svn://svn.transmissionbt.com/Transmission/trunk
-PKG_REV:=14589
+PKG_REV:=14592
 
 PKG_NAME:=transmission-svn
 PKG_VERSION:=2.84+r$(PKG_REV)
@@ -77,20 +77,23 @@ CMAKE_OPTIONS += \
 	-DEVENT2_LIBRARY:String="$(STAGING_DIR)/usr/lib/libevent-2.0.so.5"
 
 
+# $1: pkg name
+# $2: github user and repo
+# $3: commit id
+# Find from CMakeList.txt
+define TrDownFromGithub
+	(cd $(PKG_BUILD_DIR)/third-party/$(1)-$(3)/src; \
+		wget https://github.com/$(2)/archive/$(3).tar.gz \
+	)
+endef
 # temporary fix github download issue before make
 define Build/Configure
 	$(call Build/Configure/Default)
-	(cd $(PKG_BUILD_DIR)/third-party/b64-c1e3323498/src; \
-		wget https://github.com/mikedld/libb64/archive/c1e3323498.tar.gz; \
-	cd $(PKG_BUILD_DIR)/third-party/dht-cc379e406d/src; \
-		wget https://github.com/jech/dht/archive/cc379e406d.tar.gz; \
-	cd $(PKG_BUILD_DIR)/third-party/miniupnpc-5de2bcb561/src; \
-		wget https://github.com/miniupnp/miniupnp/archive/5de2bcb561.tar.gz; \
-	cd $(PKG_BUILD_DIR)/third-party/natpmp-cf7f452d66/src; \
-		wget https://github.com/miniupnp/libnatpmp/archive/cf7f452d66.tar.gz; \
-	cd $(PKG_BUILD_DIR)/third-party/utp-7c4f19abdf/src; \
-		wget https://github.com/bittorrent/libutp/archive/7c4f19abdf.tar.gz; \
-	)
+	$(call TrDownFromGithub,b64,mikedld/libb64,c1e3323498)
+	$(call TrDownFromGithub,dht,jech/dht,cc379e406d)
+	$(call TrDownFromGithub,miniupnpc,miniupnp/miniupnp,5de2bcb561)
+	$(call TrDownFromGithub,natpmp,miniupnp/libnatpmp,cf7f452d66)
+	$(call TrDownFromGithub,utp,bittorrent/libutp,7c4f19abdf)
 endef
 
 define Package/transmission-svn-daemon/install
