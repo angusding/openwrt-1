@@ -38,7 +38,7 @@ endef
 
 define Package/transmission-svn-daemon
   $(call Package/transmission-svn/template)
-  DEPENDS:=+libcurl +libopenssl +libpthread +libevent2 +librt
+  DEPENDS:=+libcurl +libopenssl +libpthread +libevent2 +librt @BROKEN
   MENU:=1
   USERID:=transmission=224:transmission=224
 endef
@@ -76,25 +76,25 @@ CMAKE_OPTIONS += \
 	-DWITH_SYSTEMD=OFF \
 	-DEVENT2_LIBRARY:String="$(STAGING_DIR)/usr/lib/libevent-2.0.so.5"
 
-
+#### Test cmake 3.3.2
 # $1: pkg name
 # $2: github user and repo
 # $3: commit id
 # Find from CMakeList.txt
-define TrDownFromGithub
-	(cd $(PKG_BUILD_DIR)/third-party/$(1)-$(3)/src; \
-		wget https://github.com/$(2)/archive/$(3).tar.gz \
-	)
-endef
+#define TrDownFromGithub
+#	(cd $(PKG_BUILD_DIR)/third-party/$(1)-$(3)/src; \
+#		wget https://github.com/$(2)/archive/$(3).tar.gz \
+#	)
+#endef
 # temporary fix github download issue before make
-define Build/Configure
-	$(call Build/Configure/Default)
-	$(call TrDownFromGithub,b64,mikedld/libb64,c1e3323498)
-	$(call TrDownFromGithub,dht,jech/dht,cc379e406d)
-	$(call TrDownFromGithub,miniupnpc,miniupnp/miniupnp,5de2bcb561)
-	$(call TrDownFromGithub,natpmp,miniupnp/libnatpmp,cf7f452d66)
-	$(call TrDownFromGithub,utp,bittorrent/libutp,7c4f19abdf)
-endef
+#define Build/Configure
+#	$(call Build/Configure/Default)
+#	$(call TrDownFromGithub,b64,mikedld/libb64,c1e3323498)
+#	$(call TrDownFromGithub,dht,jech/dht,cc379e406d)
+#	$(call TrDownFromGithub,miniupnpc,miniupnp/miniupnp,5de2bcb561)
+#	$(call TrDownFromGithub,natpmp,miniupnp/libnatpmp,cf7f452d66)
+#	$(call TrDownFromGithub,utp,bittorrent/libutp,7c4f19abdf)
+#endef
 
 define Package/transmission-svn-daemon/install
 	$(INSTALL_DIR) $(1)/usr/bin
