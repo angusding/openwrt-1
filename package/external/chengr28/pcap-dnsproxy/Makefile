@@ -64,7 +64,7 @@ define Package/pcap-dnsproxy
 	DEPENDS:=+libpthread +libstdcpp \
 		+PACKAGE_pcap-dnsproxy_libpcap:libpcap \
 		+PACKAGE_pcap-dnsproxy_libsodium:libsodium \
-		@GCC_VERSION_4_6:BROKEN @GCC_VERSION_4_8:BROKEN
+		@GCC_VERSION_4_6:BROKEN
 endef
 
 define Package/pcap-dnsproxy/conffiles
