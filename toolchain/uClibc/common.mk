@@ -9,30 +9,14 @@ include $(INCLUDE_DIR)/target.mk
 
 PKG_VERSION:=$(call qstrip,$(CONFIG_UCLIBC_VERSION))
 
-ifeq ($(CONFIG_UCLIBC_VERSION_NG),y)
 PKG_NAME:=uClibc-ng
 PKG_SOURCE_URL = http://downloads.uclibc-ng.org/releases/$(PKG_VERSION)/
-PATCH_DIR:=$(PATH_PREFIX)/patches-ng-$(PKG_VERSION)
-CONFIG_DIR:=$(PATH_PREFIX)/config-ng-$(PKG_VERSION)
-else
-PKG_NAME:=uClibc
-PKG_SOURCE_URL:=http://www.uclibc.org/downloads
-PATCH_DIR:=$(PATH_PREFIX)/patches-$(PKG_VERSION)
-CONFIG_DIR:=$(PATH_PREFIX)/config-$(PKG_VERSION)
-endif
+PATCH_DIR:=$(PATH_PREFIX)/patches
+CONFIG_DIR:=$(PATH_PREFIX)/config
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
 LIBC_SO_VERSION:=$(PKG_VERSION)
 
-UCLIBC_SNAPSHOT:=$(findstring 20150615,$(PKG_VERSION))
-ifdef UCLIBC_SNAPSHOT
-PKG_SOURCE_URL:=http://www.uclibc.org/downloads/snapshots/
-LIBC_SO_VERSION:=0.9.34-git
-endif
-
-PKG_MD5SUM_0.9.33.2 = a338aaffc56f0f5040e6d9fa8a12eda1
-PKG_MD5SUM_20150615 = ab17d84f28348c1da97f325c53f52d6a
-PKG_MD5SUM_1.0.6 = dfcc780bf2c7e2e42209bbb572e035cf
-PKG_MD5SUM=$(PKG_MD5SUM_$(PKG_VERSION))
+PKG_MD5SUM=d7dbc8ddb0274beacbb48e6928d7b097
 
 HOST_BUILD_DIR:=$(BUILD_DIR_TOOLCHAIN)/$(PKG_NAME)-$(PKG_VERSION)
 

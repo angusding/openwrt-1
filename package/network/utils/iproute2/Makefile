@@ -78,21 +78,7 @@ define Build/Configure
 		> $(PKG_BUILD_DIR)/include/SNAPSHOT.h
 endef
 
-# uclibc snapshot version has setns from commit 5d5c77daae197b00f89ad1517ffb5a7a01a78cff
-# link: http://git.uclibc.org/uClibc/commit/?id=5d5c77daae197b00f89ad1517ffb5a7a01a78cff
-ifdef CONFIG_UCLIBC_USE_VERSION_SNAPSHOT
-  TARGET_CFLAGS += -DHAVE_SETNS
-endif
-ifdef CONFIG_USE_GLIBC
-  TARGET_CFLAGS += -DHAVE_SETNS
-endif
-ifdef CONFIG_USE_MUSL
-  TARGET_CFLAGS += -DHAVE_SETNS
-endif
-ifdef CONFIG_UCLIBC_USE_VERSION_NG
-  TARGET_CFLAGS += -DHAVE_SETNS
-endif
-
+TARGET_CFLAGS += -DHAVE_SETNS
 TARGET_CFLAGS += -ffunction-sections -fdata-sections
 
 MAKE_FLAGS += \
