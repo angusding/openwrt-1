@@ -8,12 +8,12 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=util-linux
-PKG_VERSION:=2.27
-PKG_RELEASE:=2
+PKG_VERSION:=2.27.1
+PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=@KERNEL/linux/utils/$(PKG_NAME)/v2.27
-PKG_MD5SUM:=5b06bbda9309624ee7add15bc8d8ca22
+PKG_MD5SUM:=3cd2698d1363a2c64091c2dadc974647
 
 PKG_LICENSE:=GPL-2.0
 PKG_LICENSE_FILES:=COPYING getopt/COPYING libblkid/COPYING libmount/COPYING Documentation/licenses/COPYING.GPLv2 Documentation/licenses/COPYING.LGPLv2.1 libuuid/COPYING Documentation/licenses/COPYING.BSD-3 libfdisk/COPYING
