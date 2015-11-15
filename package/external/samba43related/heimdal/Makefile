@@ -27,13 +27,13 @@ HOST_CONFIGURE_ARGS += \
 	--disable-heimdal-documentation
 
 define Host/Compile
-	$(MAKE) -C $(HOST_BUILD_DIR)/include
-	$(MAKE) -C $(HOST_BUILD_DIR)/lib/roken
-	$(MAKE) -C $(HOST_BUILD_DIR)/lib/vers
-	$(MAKE) -C $(HOST_BUILD_DIR)/lib/com_err
-	$(MAKE) -C $(HOST_BUILD_DIR)/lib/asn1
-	$(MAKE) -C $(HOST_BUILD_DIR)/lib/libedit
-	$(MAKE) -C $(HOST_BUILD_DIR)/lib/sl
+	$(MAKE) -C $(HOST_BUILD_DIR)/include $(HOST_MAKE_FLAGS)
+	$(MAKE) -C $(HOST_BUILD_DIR)/lib/roken $(HOST_MAKE_FLAGS)
+	$(MAKE) -C $(HOST_BUILD_DIR)/lib/vers $(HOST_MAKE_FLAGS)
+	$(MAKE) -C $(HOST_BUILD_DIR)/lib/com_err $(HOST_MAKE_FLAGS)
+	$(MAKE) -C $(HOST_BUILD_DIR)/lib/asn1 $(HOST_MAKE_FLAGS)
+	$(MAKE) -C $(HOST_BUILD_DIR)/lib/libedit $(HOST_MAKE_FLAGS)
+	$(MAKE) -C $(HOST_BUILD_DIR)/lib/sl $(HOST_MAKE_FLAGS)
 endef
 
 define Host/Install
