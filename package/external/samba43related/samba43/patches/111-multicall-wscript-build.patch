@@ -71,8 +71,8 @@
 +                 deps='''smbd_base SMBD_MULTI NMBD_MULTI SMBPASSWD_MULTI
 +		 SMBCONTROL_MULTI SMBTREE_MULTI SMBSTATUS_MULTI
 +		 SMBCQUOTAS_MULTI SMBCACLS_MULTI NMBLOOKUP_MULTI
-+		 LOCKING PROFILE PASSWD_UTIL PASSCHANGE TESTPARM_MULTI EPMD LSASD FSSD
-+		 talloc param pdb''',
++		 PASSWD_UTIL PASSCHANGE TESTPARM_MULTI EPMD LSASD FSSD
++		 param''',
 +                 install_path='${SBINDIR}')
 +
  ########################## INCLUDES #################################

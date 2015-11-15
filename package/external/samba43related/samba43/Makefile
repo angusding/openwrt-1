@@ -20,7 +20,7 @@ PKG_MD5SUM:=e63a481cad0603db1a9239d7606cbc9a
 PKG_LICENSE:=GPLv3
 PKG_LICENSE_FILES:=COPYING
 
-PKG_BUILD_DEPENDS:=python-light libpopt heimdal/host
+PKG_BUILD_DEPENDS:=python-light libpopt
 
 PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
@@ -55,10 +55,7 @@ define Package/samba43-server/config
 	endif
 endef
 
-TARGET_CFLAGS += \
-	-D_GNU_SOURCE \
-	-ffunction-sections -fdata-sections
-
+TARGET_CFLAGS += -ffunction-sections -fdata-sections
 TARGET_LDFLAGS += -Wl,--gc-sections
 
 # Use host compiled python2 as interpreter
@@ -85,6 +82,7 @@ SAMBA_CONFIGURE_ARGS += \
 		--mandir=$(CONFIGURE_PREFIX)/man \
 		--infodir=$(CONFIGURE_PREFIX)/info
 
+# Should have a look before compiling.
 SAMBA43_CACHE := " \
 	\nChecking simple C program: OK \
 	\nrpath library support: OK \
@@ -136,7 +134,7 @@ define Build/Configure
 		./buildtools/bin/waf configure -j$(shell nproc) \
 			--cross-compile \
 			--cross-answers=$(PKG_BUILD_DIR)/cache.txt \
-			--hostcc=$(HOSTCC) \
+			--hostcc="$(HOSTCC)" \
 			$(SAMBA_CONFIGURE_ARGS) \
 			--with-lockdir=/var/lock \
 			--with-logfilebase=/var/log \
@@ -172,14 +170,16 @@ define Build/Configure
 			--without-utmp \
 			--without-winbind \
 			--nonshared-binary=$(PKG_NAME)_multicall \
-			--with-shared-modules=pdb_tdbsam,pdb_wbc_sam,idmap_nss,nss_info_template,auth_wbc \
+			--bundled-libraries=ALL \
 			--without-quotas \
 			--with-syslog \
 			--nopyc \
 			--nopyo \
 	)
 endef
-
+# leftovers of samba 4.0: 			--with-shared-modules=pdb_tdbsam,pdb_wbc_sam,idmap_nss,nss_info_template,auth_wbc
+# simple file server: --bundled-libraries=NONE --builtin-libraries=NONE
+# --bundled-libraries=ALL ---> do not find libs from system, use integrated libs
 # '--nonshared-binary' works like '--disable-shared-libs' in samba 4.0.26
 # or use '--builtin-libraries' to specify which library to build into.
 # --nonshared-binary=smbd/smbd,nmbd/nmbd,smbpasswd,smbcontrol,smbtree,smbstatus,smbcquotas,smbcacls,nmblookup,testparm,$(PKG_NAME)_multicall
@@ -188,10 +188,33 @@ endef
 # smbd_base samba-util tdb talloc param pdb
 # seems don't need: krb5samba
 
+#  Some important options:
+#
+#   --with-static-modules=STATIC_MODULES
+#            Comma-separated list of names of modules to statically link in
+#   --with-shared-modules=SHARED_MODULES
+#            Comma-separated list of names of modules to build shared
+#    --private-libraries=PRIVATE_LIBS
+#            comma separated list of normally public libraries to build instead as private libraries. May include !LIBNAME to disable making a library private. Can be 'NONE' or 'ALL' [auto]
+#    --builtin-libraries=BUILTIN_LIBRARIES
+#            command separated list of libraries to build directly into binaries [NONE]
+#    --nonshared-binary=NONSHARED_BINARIES
+#            Disable use of shared libs for the listed binaries
+#
+
+# Disable some libs
+# 	--without-libtdb \   bld.SAMBA_LIBRARY('tdb',
+#	--without-libtalloc \
+#	--without-libnetapi \  bld.SAMBA3_LIBRARY('netapi',
+#	--without-libsmbclient \
+#	--without-libsmbsharemodes \
+#
+
 # speed up
+# $(shell nproc)
 define Build/Compile
 	(cd $(PKG_BUILD_DIR); \
-		./buildtools/bin/waf build -j$(shell nproc) \
+		./buildtools/bin/waf build --targets=$(PKG_NAME)_multicall -j1 \
 	)
 endef
 
