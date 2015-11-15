@@ -85,6 +85,11 @@ TARGET_CFLAGS += \
 	-DLSA_SUPPORT
 
 TARGET_LDFLAGS += -Wl,--gc-sections
+
+# Use Link time optimization
+TARGET_CFLAGS += -flto
+TARGET_LDFLAGS += -flto
+
 # maybe we don't need them =>  -laio -ldl
 
 # XXX: can NOT detect endian while cross compiling, now for ARM(little endian)
