@@ -172,10 +172,17 @@ redsocks2_iptables_start_instance() {
 	iptables -t nat -N $CHAIN_NAME
 	iptables -t nat -A $CHAIN_NAME -d 0.0.0.0/8 -j RETURN
 	iptables -t nat -A $CHAIN_NAME -d 10.0.0.0/8 -j RETURN
+	iptables -t nat -A $CHAIN_NAME -d 100.64.0.0/10 -j RETURN
 	iptables -t nat -A $CHAIN_NAME -d 127.0.0.0/8 -j RETURN
 	iptables -t nat -A $CHAIN_NAME -d 169.254.0.0/16 -j RETURN
 	iptables -t nat -A $CHAIN_NAME -d 172.16.0.0/12 -j RETURN
+	iptables -t nat -A $CHAIN_NAME -d 192.0.0.0/24 -j RETURN
+	iptables -t nat -A $CHAIN_NAME -d 192.0.2.0/24 -j RETURN
+	iptables -t nat -A $CHAIN_NAME -d 192.88.99.0/24 -j RETURN
 	iptables -t nat -A $CHAIN_NAME -d 192.168.0.0/16 -j RETURN
+	iptables -t nat -A $CHAIN_NAME -d 198.18.0.0/15 -j RETURN
+	iptables -t nat -A $CHAIN_NAME -d 198.51.100.0/24 -j RETURN
+	iptables -t nat -A $CHAIN_NAME -d 203.0.113.0/24 -j RETURN
 	iptables -t nat -A $CHAIN_NAME -d 224.0.0.0/4 -j RETURN
 	iptables -t nat -A $CHAIN_NAME -d 240.0.0.0/4 -j RETURN
 

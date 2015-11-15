@@ -8,9 +8,9 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=redsocks2
-PKG_VERSION:=0.60
-PKG_RELEASE:=3
-PKG_REV:=68a479e0720b84e8429b1037c5efa9b953c5bb6c
+PKG_VERSION:=0.65
+PKG_RELEASE:=1
+PKG_REV:=02a53ce90413c73895fd3d126319478540c46571
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_VERSION:=$(PKG_REV)
@@ -57,6 +57,10 @@ define Package/redsocks2/postinst
 #!/bin/sh
 if [ -z "$${IPKG_INSTROOT}" ]; then
 	uci -q batch <<-EOF >/dev/null
+		delete ucitrack.@redsocks2[-1]
+		add ucitrack redsocks2
+		set ucitrack.@redsocks2[-1].init=redsocks2
+		commit ucitrack
 		delete firewall.redsocks2
 		set firewall.redsocks2=include
 		set firewall.redsocks2.type=script
