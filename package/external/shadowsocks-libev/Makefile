@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=shadowsocks-libev
 PKG_VERSION:=2.4.1
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 PKG_REV:=772de6fdeb15fd7d2b7853b4d3e0372713f16b81
 
 PKG_SOURCE_PROTO:=git
@@ -37,7 +37,7 @@ define Package/shadowsocks-libev/Default
 	TITLE:=Lightweight Secured Socks5 Proxy $(2)
 	URL:=https://github.com/shadowsocks/shadowsocks-libev
 	VARIANT:=$(1)
-	DEPENDS:=$(3) +libpthread +libsodium +ipset +ip +iptables-mod-tproxy
+	DEPENDS:=$(3) +libpthread +libsodium +libev +ipset +ip +iptables-mod-tproxy
 endef
 
 Package/shadowsocks-libev = $(call Package/shadowsocks-libev/Default,openssl,(OpenSSL),+libopenssl)
@@ -84,7 +84,15 @@ endef
 
 Package/shadowsocks-libev-spec-polarssl/postinst = $(Package/shadowsocks-libev-spec/postinst)
 
+# Use shared lib provided by OpenWrt
 CONFIGURE_ARGS += --enable-system-shared-lib
+
+TARGET_CFLAGS += -ffunction-sections -fdata-sections
+TARGET_LDFLAGS += -Wl,--gc-sections
+
+# Use Link time optimization for GCC 5
+TARGET_CFLAGS += -flto
+TARGET_LDFLAGS += -flto
 
 ifeq ($(BUILD_VARIANT),polarssl)
 	CONFIGURE_ARGS += --with-crypto-library=polarssl
