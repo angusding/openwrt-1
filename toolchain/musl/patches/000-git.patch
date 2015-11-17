@@ -1,0 +1,2863 @@
+From be76cdcf81bdf60d2b7981d9f7d09593f88ef4e6 Mon Sep 17 00:00:00 2001
+From: Rich Felker <dalias@aerifal.cx>
+Date: Thu, 22 Oct 2015 23:41:35 -0400
+Subject: [PATCH 01/32] fix breakage when user overrides CFLAGS on the make
+ command line
+
+these per-target CFLAGS adjustments are mandatory additions to the
+command line for building the affected targets, not part of the
+user-provided CFLAGS for tuning. my intent was always that the
+variable append operations would take place after user settings, but
+when a variable is set on the command line, it overrides all
+definitions in the makefile, including target-specific ones.
+
+based on patch by Szabolcs Nagy.
+---
+ Makefile | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 844a017..b2226fa 100644
+--- a/Makefile
++++ b/Makefile
+@@ -94,22 +94,22 @@ crt/crt1.o crt/Scrt1.o crt/rcrt1.o src/ldso/dlstart.lo: $(wildcard arch/$(ARCH)/
+ 
+ crt/rcrt1.o: src/ldso/dlstart.c
+ 
+-crt/Scrt1.o crt/rcrt1.o: CFLAGS += -fPIC
++crt/Scrt1.o crt/rcrt1.o: CFLAGS_ALL += -fPIC
+ 
+ OPTIMIZE_SRCS = $(wildcard $(OPTIMIZE_GLOBS:%=src/%))
+ $(OPTIMIZE_SRCS:%.c=%.o) $(OPTIMIZE_SRCS:%.c=%.lo): CFLAGS += -O3
+ 
+ MEMOPS_SRCS = src/string/memcpy.c src/string/memmove.c src/string/memcmp.c src/string/memset.c
+-$(MEMOPS_SRCS:%.c=%.o) $(MEMOPS_SRCS:%.c=%.lo): CFLAGS += $(CFLAGS_MEMOPS)
++$(MEMOPS_SRCS:%.c=%.o) $(MEMOPS_SRCS:%.c=%.lo): CFLAGS_ALL += $(CFLAGS_MEMOPS)
+ 
+ NOSSP_SRCS = $(wildcard crt/*.c) \
+ 	src/env/__libc_start_main.c src/env/__init_tls.c \
+ 	src/thread/__set_thread_area.c src/env/__stack_chk_fail.c \
+ 	src/string/memset.c src/string/memcpy.c \
+ 	src/ldso/dlstart.c src/ldso/dynlink.c
+-$(NOSSP_SRCS:%.c=%.o) $(NOSSP_SRCS:%.c=%.lo): CFLAGS += $(CFLAGS_NOSSP)
++$(NOSSP_SRCS:%.c=%.o) $(NOSSP_SRCS:%.c=%.lo): CFLAGS_ALL += $(CFLAGS_NOSSP)
+ 
+-$(CRT_LIBS:lib/%=crt/%): CFLAGS += -DCRT
++$(CRT_LIBS:lib/%=crt/%): CFLAGS_ALL += -DCRT
+ 
+ # This incantation ensures that changes to any subarch asm files will
+ # force the corresponding object file to be rebuilt, even if the implicit
+-- 
+2.6.2
+
+From bc0c48414eaba9e974e54aa8ef611b78037fd387 Mon Sep 17 00:00:00 2001
+From: Rich Felker <dalias@aerifal.cx>
+Date: Fri, 23 Oct 2015 00:01:01 -0400
+Subject: [PATCH 02/32] prevent user CFLAGS overrides from exposing executable
+ stack
+
+the option to suppress executable stack tagging was placed in CFLAGS,
+which is treated as optional and overridable by the build system. if a
+user replaces CFLAGS after configure has run, it could get lost,
+resulting in a libc.so that's flagged as needing executable stack,
+which would cause the kernel to map the initial stack as executable.
+
+move -Wa,--noexecstack to CFLAGS_C99FSE, the make variable used for
+mandatory compiler options.
+---
+ configure | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/configure b/configure
+index 03c0ebe..742ca26 100755
+--- a/configure
++++ b/configure
+@@ -330,6 +330,13 @@ CFLAGS_C99FSE="$CFLAGS_C99FSE -D__may_alias__="
+ fi
+ 
+ #
++# The GNU toolchain defaults to assuming unmarked files need an
++# executable stack, potentially exposing vulnerabilities in programs
++# linked with such object files. Fix this.
++#
++tryflag CFLAGS_C99FSE -Wa,--noexecstack
++
++#
+ # Check for options to disable stack protector, which needs to be
+ # disabled for a few early-bootstrap translation units. If not found,
+ # this is not an error; we assume the toolchain does not do ssp.
+@@ -430,13 +437,6 @@ tryflag CFLAGS_AUTO -fno-unwind-tables
+ tryflag CFLAGS_AUTO -fno-asynchronous-unwind-tables
+ 
+ #
+-# The GNU toolchain defaults to assuming unmarked files need an
+-# executable stack, potentially exposing vulnerabilities in programs
+-# linked with such object files. Fix this.
+-#
+-tryflag CFLAGS_AUTO -Wa,--noexecstack
+-
+-#
+ # On x86, make sure we don't have incompatible instruction set
+ # extensions enabled by default. This is bad for making static binaries.
+ # We cheat and use i486 rather than i386 because i386 really does not
+-- 
+2.6.2
+
+From b114190b29417fff6f701eea3a3b3b6030338280 Mon Sep 17 00:00:00 2001
+From: Rich Felker <dalias@aerifal.cx>
+Date: Sat, 24 Oct 2015 22:42:10 -0400
+Subject: [PATCH 03/32] fix single-byte overflow of malloc'd buffer in getdelim
+
+the buffer enlargement logic here accounted for the terminating null
+byte, but not for the possibility of hitting the delimiter in the
+buffer-refill code path that uses getc_unlocked, in which case two
+additional bytes (the delimiter and the null termination) are written
+without another chance to enlarge the buffer.
+
+this patch and the corresponding bug report are by Felix Janda.
+---
+ src/stdio/getdelim.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/stdio/getdelim.c b/src/stdio/getdelim.c
+index a88c393..3077490 100644
+--- a/src/stdio/getdelim.c
++++ b/src/stdio/getdelim.c
+@@ -27,7 +27,7 @@ ssize_t getdelim(char **restrict s, size_t *restrict n, int delim, FILE *restric
+ 	for (;;) {
+ 		z = memchr(f->rpos, delim, f->rend - f->rpos);
+ 		k = z ? z - f->rpos + 1 : f->rend - f->rpos;
+-		if (i+k >= *n) {
++		if (i+k+1 >= *n) {
+ 			if (k >= SIZE_MAX/2-i) goto oom;
+ 			*n = i+k+2;
+ 			if (*n < SIZE_MAX/4) *n *= 2;
+-- 
+2.6.2
+
+From 2683e267fa6c20d2e7a498a85f79a1dfc4301f23 Mon Sep 17 00:00:00 2001
+From: Rich Felker <dalias@aerifal.cx>
+Date: Mon, 26 Oct 2015 18:42:22 -0400
+Subject: [PATCH 04/32] safely handle failure to open hosts, services,
+ resolv.conf files
+
+previously, transient failures like fd exhaustion or other
+resource-related errors were treated the same as non-existence of
+these files, leading to fallbacks or false-negative results. in
+particular:
+
+- failure to open hosts resulted in fallback to dns, possibly yielding
+  EAI_NONAME for a hostname that should be defined locally, or an
+  unwanted result from dns that the hosts file was intended to
+  replace.
+
+- failure to open services resulted in EAI_SERVICE.
+
+- failure to open resolv.conf resulted in querying localhost rather
+  than the configured nameservers.
+
+now, only permanent errors trigger the fallback behaviors above; all
+other errors are reportable to the caller as EAI_SYSTEM.
+---
+ src/network/lookup_name.c | 10 +++++++++-
+ src/network/lookup_serv.c | 10 +++++++++-
+ src/network/res_msend.c   | 13 +++++++++++--
+ 3 files changed, 29 insertions(+), 4 deletions(-)
+
+diff --git a/src/network/lookup_name.c b/src/network/lookup_name.c
+index 0225a93..df9e623 100644
+--- a/src/network/lookup_name.c
++++ b/src/network/lookup_name.c
+@@ -9,6 +9,7 @@
+ #include <fcntl.h>
+ #include <unistd.h>
+ #include <pthread.h>
++#include <errno.h>
+ #include "lookup.h"
+ #include "stdio_impl.h"
+ #include "syscall.h"
+@@ -51,7 +52,14 @@ static int name_from_hosts(struct address buf[static MAXADDRS], char canon[stati
+ 	int cnt = 0;
+ 	unsigned char _buf[1032];
+ 	FILE _f, *f = __fopen_rb_ca("/etc/hosts", &_f, _buf, sizeof _buf);
+-	if (!f) return 0;
++	if (!f) switch (errno) {
++	case ENOENT:
++	case ENOTDIR:
++	case EACCES:
++		return 0;
++	default:
++		return EAI_SYSTEM;
++	}
+ 	while (fgets(line, sizeof line, f) && cnt < MAXADDRS) {
+ 		char *p, *z;
+ 
+diff --git a/src/network/lookup_serv.c b/src/network/lookup_serv.c
+index 4faa5bc..66ebaea 100644
+--- a/src/network/lookup_serv.c
++++ b/src/network/lookup_serv.c
+@@ -4,6 +4,7 @@
+ #include <ctype.h>
+ #include <string.h>
+ #include <fcntl.h>
++#include <errno.h>
+ #include "lookup.h"
+ #include "stdio_impl.h"
+ 
+@@ -69,7 +70,14 @@ int __lookup_serv(struct service buf[static MAXSERVS], const char *name, int pro
+ 
+ 	unsigned char _buf[1032];
+ 	FILE _f, *f = __fopen_rb_ca("/etc/services", &_f, _buf, sizeof _buf);
+-	if (!f) return EAI_SERVICE;
++	if (!f) switch (errno) {
++	case ENOENT:
++	case ENOTDIR:
++	case EACCES:
++		return EAI_SERVICE;
++	default:
++		return EAI_SYSTEM;
++	}
+ 
+ 	while (fgets(line, sizeof line, f) && cnt < MAXSERVS) {
+ 		if ((p=strchr(line, '#'))) *p++='\n', *p=0;
+diff --git a/src/network/res_msend.c b/src/network/res_msend.c
+index 35f106d..d0e8e48 100644
+--- a/src/network/res_msend.c
++++ b/src/network/res_msend.c
+@@ -54,7 +54,15 @@ int __res_msend(int nqueries, const unsigned char *const *queries,
+ 
+ 	/* Get nameservers from resolv.conf, fallback to localhost */
+ 	f = __fopen_rb_ca("/etc/resolv.conf", &_f, _buf, sizeof _buf);
+-	if (f) for (nns=0; nns<3 && fgets(line, sizeof line, f); ) {
++	if (!f) switch (errno) {
++	case ENOENT:
++	case ENOTDIR:
++	case EACCES:
++		goto no_resolv_conf;
++	default:
++		return -1;
++	}
++	for (nns=0; nns<3 && fgets(line, sizeof line, f); ) {
+ 		if (!strncmp(line, "options", 7) && isspace(line[7])) {
+ 			unsigned long x;
+ 			char *p, *z;
+@@ -92,7 +100,8 @@ int __res_msend(int nqueries, const unsigned char *const *queries,
+ 			}
+ 		}
+ 	}
+-	if (f) __fclose_ca(f);
++	__fclose_ca(f);
++no_resolv_conf:
+ 	if (!nns) {
+ 		ns[0].sin.sin_family = AF_INET;
+ 		ns[0].sin.sin_port = htons(53);
+-- 
+2.6.2
+
+From 6eada2edb302ff061be8546b23c9cb836621d122 Mon Sep 17 00:00:00 2001
+From: Hauke Mehrtens <hauke@hauke-m.de>
+Date: Mon, 26 Oct 2015 23:03:55 +0100
+Subject: [PATCH 05/32] getnameinfo: make size check not fail for bigger sizes
+
+getnameinfo() compares the size of the given struct sockaddr with
+sizeof(struct sockaddr_in) and sizeof(struct sockaddr_in6) depending on
+the net family. When you add a sockaddr of size sizeof(struct
+sockaddr_storage) this function will fail because the size of the
+sockaddr is too big. Change the check that it only fails if the size is
+too small, but make it work when it is too big for example when someone
+calls this function with a struct sockaddr_storage and its size.
+This fixes a problem with IoTivity 1.0.0 and musl.
+
+glibc and bionic are only failing if it is smaller, net/freebsd
+implemented the != check.
+
+Signed-off-by: Hauke Mehrtens <hauke@hauke-m.de>
+---
+ src/network/getnameinfo.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/network/getnameinfo.c b/src/network/getnameinfo.c
+index 3484fc6..5e6fae3 100644
+--- a/src/network/getnameinfo.c
++++ b/src/network/getnameinfo.c
+@@ -135,13 +135,13 @@ int getnameinfo(const struct sockaddr *restrict sa, socklen_t sl,
+ 	switch (af) {
+ 	case AF_INET:
+ 		a = (void *)&((struct sockaddr_in *)sa)->sin_addr;
+-		if (sl != sizeof(struct sockaddr_in)) return EAI_FAMILY;
++		if (sl < sizeof(struct sockaddr_in)) return EAI_FAMILY;
+ 		mkptr4(ptr, a);
+ 		scopeid = 0;
+ 		break;
+ 	case AF_INET6:
+ 		a = (void *)&((struct sockaddr_in6 *)sa)->sin6_addr;
+-		if (sl != sizeof(struct sockaddr_in6)) return EAI_FAMILY;
++		if (sl < sizeof(struct sockaddr_in6)) return EAI_FAMILY;
+ 		if (memcmp(a, "\0\0\0\0\0\0\0\0\0\0\xff\xff", 12))
+ 			mkptr6(ptr, a);
+ 		else
+-- 
+2.6.2
+
+From fead7e3fc04729b4cc8a5feec4a172b389395212 Mon Sep 17 00:00:00 2001
+From: Rich Felker <dalias@aerifal.cx>
+Date: Wed, 28 Oct 2015 21:45:31 -0400
+Subject: [PATCH 06/32] fix missing bss handling in FDPIC ELF loader
+
+when a library being loaded has bss (i.e. data segment with
+p_memsz>p_filesz), this region needs to be zeroed with a combination
+of memset and/or mmap. the regular ELF loader always did this but the
+FDPIC code path omitted it, leading to objects in bss having
+uninitialized/junk contents.
+---
+ src/ldso/dynlink.c | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/src/ldso/dynlink.c b/src/ldso/dynlink.c
+index 642ecc3..a6484dd 100644
+--- a/src/ldso/dynlink.c
++++ b/src/ldso/dynlink.c
+@@ -604,6 +604,19 @@ static void *map_library(int fd, struct dso *dso)
+ 			dso->loadmap->segs[i].p_vaddr = ph->p_vaddr;
+ 			dso->loadmap->segs[i].p_memsz = ph->p_memsz;
+ 			i++;
++			if (prot & PROT_WRITE) {
++				size_t brk = (ph->p_vaddr & PAGE_SIZE-1)
++					+ ph->p_filesz;
++				size_t pgbrk = brk + PAGE_SIZE-1 & -PAGE_SIZE;
++				size_t pgend = brk + ph->p_memsz - ph->p_filesz
++					+ PAGE_SIZE-1 & -PAGE_SIZE;
++				if (pgend > pgbrk && mmap_fixed(map+pgbrk,
++					pgend-pgbrk, prot,
++					MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS,
++					-1, off_start) == MAP_FAILED)
++					goto error;
++				memset(map + brk, 0, pgbrk-brk);
++			}
+ 		}
+ 		map = (void *)dso->loadmap->segs[0].addr;
+ 		map_len = 0;
+-- 
+2.6.2
+
+From cb1bf2f321b45a06447133b3db00621b7300c456 Mon Sep 17 00:00:00 2001
+From: Rich Felker <dalias@aerifal.cx>
+Date: Mon, 2 Nov 2015 12:39:28 -0500
+Subject: [PATCH 07/32] properly access mcontext_t program counter in
+ cancellation handler
+
+using the actual mcontext_t definition rather than an overlaid pointer
+array both improves correctness/readability and eliminates some ugly
+hacks for archs with 64-bit registers bit 32-bit program counter.
+
+also fix UB due to comparison of pointers not in a common array
+object.
+---
+ arch/aarch64/pthread_arch.h    | 2 +-
+ arch/arm/pthread_arch.h        | 2 +-
+ arch/i386/pthread_arch.h       | 2 +-
+ arch/microblaze/pthread_arch.h | 2 +-
+ arch/mips/pthread_arch.h       | 2 +-
+ arch/or1k/pthread_arch.h       | 3 +--
+ arch/powerpc/pthread_arch.h    | 3 +--
+ arch/sh/pthread_arch.h         | 2 +-
+ arch/x32/pthread_arch.h        | 2 +-
+ arch/x86_64/pthread_arch.h     | 2 +-
+ src/thread/pthread_cancel.c    | 7 ++++---
+ 11 files changed, 14 insertions(+), 15 deletions(-)
+
+diff --git a/arch/aarch64/pthread_arch.h b/arch/aarch64/pthread_arch.h
+index 74276f4..b2e2d8f 100644
+--- a/arch/aarch64/pthread_arch.h
++++ b/arch/aarch64/pthread_arch.h
+@@ -8,4 +8,4 @@ static inline struct pthread *__pthread_self()
+ #define TLS_ABOVE_TP
+ #define TP_ADJ(p) ((char *)(p) + sizeof(struct pthread) - 16)
+ 
+-#define CANCEL_REG_IP 33
++#define MC_PC pc
+diff --git a/arch/arm/pthread_arch.h b/arch/arm/pthread_arch.h
+index 4a4dd09..8b8a7fb 100644
+--- a/arch/arm/pthread_arch.h
++++ b/arch/arm/pthread_arch.h
+@@ -27,4 +27,4 @@ static inline pthread_t __pthread_self()
+ #define TLS_ABOVE_TP
+ #define TP_ADJ(p) ((char *)(p) + sizeof(struct pthread) - 8)
+ 
+-#define CANCEL_REG_IP 18
++#define MC_PC arm_pc
+diff --git a/arch/i386/pthread_arch.h b/arch/i386/pthread_arch.h
+index 1c06c76..7f38a56 100644
+--- a/arch/i386/pthread_arch.h
++++ b/arch/i386/pthread_arch.h
+@@ -7,4 +7,4 @@ static inline struct pthread *__pthread_self()
+ 
+ #define TP_ADJ(p) (p)
+ 
+-#define CANCEL_REG_IP 14
++#define MC_PC gregs[REG_EIP]
+diff --git a/arch/microblaze/pthread_arch.h b/arch/microblaze/pthread_arch.h
+index 259d3d6..08d1ba7 100644
+--- a/arch/microblaze/pthread_arch.h
++++ b/arch/microblaze/pthread_arch.h
+@@ -7,4 +7,4 @@ static inline struct pthread *__pthread_self()
+ 
+ #define TP_ADJ(p) (p)
+ 
+-#define CANCEL_REG_IP 32
++#define MC_PC regs.pc
+diff --git a/arch/mips/pthread_arch.h b/arch/mips/pthread_arch.h
+index 93edbd4..8a49965 100644
+--- a/arch/mips/pthread_arch.h
++++ b/arch/mips/pthread_arch.h
+@@ -16,4 +16,4 @@ static inline struct pthread *__pthread_self()
+ 
+ #define DTP_OFFSET 0x8000
+ 
+-#define CANCEL_REG_IP (3-(union {int __i; char __b;}){1}.__b)
++#define MC_PC pc
+diff --git a/arch/or1k/pthread_arch.h b/arch/or1k/pthread_arch.h
+index ad63169..7decd76 100644
+--- a/arch/or1k/pthread_arch.h
++++ b/arch/or1k/pthread_arch.h
+@@ -14,5 +14,4 @@ static inline struct pthread *__pthread_self()
+ #define TLS_ABOVE_TP
+ #define TP_ADJ(p) ((char *)(p) + sizeof(struct pthread))
+ 
+-/* word-offset to 'pc' in mcontext_t */
+-#define CANCEL_REG_IP 32
++#define MC_PC regs.pc
+diff --git a/arch/powerpc/pthread_arch.h b/arch/powerpc/pthread_arch.h
+index bb7405d..7c5c4fa 100644
+--- a/arch/powerpc/pthread_arch.h
++++ b/arch/powerpc/pthread_arch.h
+@@ -15,9 +15,8 @@ static inline struct pthread *__pthread_self()
+ 
+ #define DTP_OFFSET 0x8000
+ 
+-// offset of the PC register in mcontext_t, divided by the system wordsize
+ // the kernel calls the ip "nip", it's the first saved value after the 32
+ // GPRs.
+-#define CANCEL_REG_IP 32
++#define MC_PC gregs[32]
+ 
+ #define CANARY canary_at_end
+diff --git a/arch/sh/pthread_arch.h b/arch/sh/pthread_arch.h
+index 65c389f..2756e7e 100644
+--- a/arch/sh/pthread_arch.h
++++ b/arch/sh/pthread_arch.h
+@@ -8,4 +8,4 @@ static inline struct pthread *__pthread_self()
+ #define TLS_ABOVE_TP
+ #define TP_ADJ(p) ((char *)(p) + sizeof(struct pthread) - 8)
+ 
+-#define CANCEL_REG_IP 17
++#define MC_PC sc_pc
+diff --git a/arch/x32/pthread_arch.h b/arch/x32/pthread_arch.h
+index 033bfd6..ecb0bbf 100644
+--- a/arch/x32/pthread_arch.h
++++ b/arch/x32/pthread_arch.h
+@@ -7,6 +7,6 @@ static inline struct pthread *__pthread_self()
+ 
+ #define TP_ADJ(p) (p)
+ 
+-#define CANCEL_REG_IP 32
++#define MC_PC gregs[REG_RIP]
+ 
+ #define CANARY canary2
+diff --git a/arch/x86_64/pthread_arch.h b/arch/x86_64/pthread_arch.h
+index 29e4590..c61509c 100644
+--- a/arch/x86_64/pthread_arch.h
++++ b/arch/x86_64/pthread_arch.h
+@@ -7,4 +7,4 @@ static inline struct pthread *__pthread_self()
+ 
+ #define TP_ADJ(p) (p)
+ 
+-#define CANCEL_REG_IP 16
++#define MC_PC gregs[REG_RIP]
+diff --git a/src/thread/pthread_cancel.c b/src/thread/pthread_cancel.c
+index 0151a1a..6eaf72c 100644
+--- a/src/thread/pthread_cancel.c
++++ b/src/thread/pthread_cancel.c
+@@ -1,3 +1,4 @@
++#define _GNU_SOURCE
+ #include <string.h>
+ #include "pthread_impl.h"
+ #include "syscall.h"
+@@ -61,15 +62,15 @@ static void cancel_handler(int sig, siginfo_t *si, void *ctx)
+ {
+ 	pthread_t self = __pthread_self();
+ 	ucontext_t *uc = ctx;
+-	const char *ip = ((char **)&uc->uc_mcontext)[CANCEL_REG_IP];
++	uintptr_t pc = uc->uc_mcontext.MC_PC;
+ 
+ 	a_barrier();
+ 	if (!self->cancel || self->canceldisable == PTHREAD_CANCEL_DISABLE) return;
+ 
+ 	_sigaddset(&uc->uc_sigmask, SIGCANCEL);
+ 
+-	if (self->cancelasync || ip >= __cp_begin && ip < __cp_end) {
+-		((char **)&uc->uc_mcontext)[CANCEL_REG_IP] = (char *)__cp_cancel;
++	if (self->cancelasync || pc >= (uintptr_t)__cp_begin && pc < (uintptr_t)__cp_end) {
++		uc->uc_mcontext.MC_PC = (uintptr_t)__cp_cancel;
+ 		return;
+ 	}
+ 
+-- 
+2.6.2
+
+From 36e8b6a28be5d4ffad966386b1e1c0d0dc6ca11a Mon Sep 17 00:00:00 2001
+From: Rich Felker <dalias@aerifal.cx>
+Date: Mon, 2 Nov 2015 16:16:00 -0500
+Subject: [PATCH 08/32] use explicit __cp_cancel label in cancellable syscall
+ asm for all archs
+
+previously, only archs that needed to do stack cleanup defined a
+__cp_cancel label for acting on cancellation in their syscall asm, and
+a default definition was provided by a weak alias to __cancel, the C
+function. this resulted in wrong codegen for arm on gcc versions
+affected by pr 68178 and possibly similar issues (like pr 66609) on
+other archs, and also created an inconsistency where the __cp_begin
+and __cp_end labels were treated as const data but __cp_cancel was
+treated as a function. this in turn caused incorrect code generation
+on archs where function pointers point to function descriptors rather
+than code (for now, only sh/fdpic).
+---
+ src/thread/aarch64/syscall_cp.s    |  7 +++----
+ src/thread/microblaze/syscall_cp.s |  4 +++-
+ src/thread/or1k/syscall_cp.s       |  5 ++++-
+ src/thread/powerpc/syscall_cp.s    |  4 +++-
+ src/thread/pthread_cancel.c        | 10 ++--------
+ src/thread/sh/syscall_cp.s         | 22 +++++++++++-----------
+ src/thread/x32/syscall_cp.s        |  4 +++-
+ src/thread/x86_64/syscall_cp.s     |  4 +++-
+ 8 files changed, 32 insertions(+), 28 deletions(-)
+
+diff --git a/src/thread/aarch64/syscall_cp.s b/src/thread/aarch64/syscall_cp.s
+index 30e677c..41db68a 100644
+--- a/src/thread/aarch64/syscall_cp.s
++++ b/src/thread/aarch64/syscall_cp.s
+@@ -17,7 +17,7 @@
+ __syscall_cp_asm:
+ __cp_begin:
+ 	ldr w0,[x0]
+-	cbnz w0,1f
++	cbnz w0,__cp_cancel
+ 	mov x8,x1
+ 	mov x0,x2
+ 	mov x1,x3
+@@ -28,6 +28,5 @@ __cp_begin:
+ 	svc 0
+ __cp_end:
+ 	ret
+-
+-	// cbnz might not be able to jump far enough
+-1:	b __cancel
++__cp_cancel:
++	b __cancel
+diff --git a/src/thread/microblaze/syscall_cp.s b/src/thread/microblaze/syscall_cp.s
+index 51599c9..b0df61c 100644
+--- a/src/thread/microblaze/syscall_cp.s
++++ b/src/thread/microblaze/syscall_cp.s
+@@ -11,7 +11,7 @@
+ __syscall_cp_asm:
+ __cp_begin:
+ 	lwi     r5, r5, 0
+-	bnei    r5, __cancel
++	bnei    r5, __cp_cancel
+ 	addi    r12, r6, 0
+ 	add     r5, r7, r0
+ 	add     r6, r8, r0
+@@ -23,3 +23,5 @@ __cp_begin:
+ __cp_end:
+ 	rtsd    r15, 8
+ 	nop
++__cp_cancel:
++	bri     __cancel
+diff --git a/src/thread/or1k/syscall_cp.s b/src/thread/or1k/syscall_cp.s
+index 2c0bf0e..7951166 100644
+--- a/src/thread/or1k/syscall_cp.s
++++ b/src/thread/or1k/syscall_cp.s
+@@ -12,7 +12,7 @@ __syscall_cp_asm:
+ __cp_begin:
+ 	l.lwz	r3, 0(r3)
+ 	l.sfeqi	r3, 0
+-	l.bnf	__cancel
++	l.bnf	__cp_cancel
+ 	 l.ori	r11, r4, 0
+ 	l.ori	r3, r5, 0
+ 	l.ori	r4, r6, 0
+@@ -24,3 +24,6 @@ __cp_begin:
+ __cp_end:
+ 	l.jr	r9
+ 	 l.nop
++__cp_cancel:
++	l.j	__cancel
++	 l.nop
+diff --git a/src/thread/powerpc/syscall_cp.s b/src/thread/powerpc/syscall_cp.s
+index 20b5e0a..77f8938 100644
+--- a/src/thread/powerpc/syscall_cp.s
++++ b/src/thread/powerpc/syscall_cp.s
+@@ -38,7 +38,7 @@ __cp_begin:
+ 	cmpwi cr7, 0, 0 #compare r0 with 0, store result in cr7. 
+ 	beq+ cr7, 1f #jump to label 1 if r0 was 0
+ 	
+-	b __cancel #else call cancel 
++	b __cp_cancel #else call cancel
+ 1:
+ 	#ok, the cancel flag was not set
+ 	# syscall: number goes to r0, the rest 3-8
+@@ -55,3 +55,5 @@ __cp_end:
+ 	#else negate result.
+ 	neg 3, 3
+ 	blr
++__cp_cancel:
++	b __cancel
+diff --git a/src/thread/pthread_cancel.c b/src/thread/pthread_cancel.c
+index 6eaf72c..c4631f0 100644
+--- a/src/thread/pthread_cancel.c
++++ b/src/thread/pthread_cancel.c
+@@ -7,7 +7,7 @@
+ #ifdef SHARED
+ __attribute__((__visibility__("hidden")))
+ #endif
+-long __cancel(), __cp_cancel(), __syscall_cp_asm(), __syscall_cp_c();
++long __cancel(), __syscall_cp_asm(), __syscall_cp_c();
+ 
+ long __cancel()
+ {
+@@ -18,12 +18,6 @@ long __cancel()
+ 	return -ECANCELED;
+ }
+ 
+-/* If __syscall_cp_asm has adjusted the stack pointer, it must provide a
+- * definition of __cp_cancel to undo those adjustments and call __cancel.
+- * Otherwise, __cancel provides a definition for __cp_cancel. */
+-
+-weak_alias(__cancel, __cp_cancel);
+-
+ long __syscall_cp_asm(volatile void *, syscall_arg_t,
+                       syscall_arg_t, syscall_arg_t, syscall_arg_t,
+                       syscall_arg_t, syscall_arg_t, syscall_arg_t);
+@@ -56,7 +50,7 @@ static void _sigaddset(sigset_t *set, int sig)
+ #ifdef SHARED
+ __attribute__((__visibility__("hidden")))
+ #endif
+-extern const char __cp_begin[1], __cp_end[1];
++extern const char __cp_begin[1], __cp_end[1], __cp_cancel[1];
+ 
+ static void cancel_handler(int sig, siginfo_t *si, void *ctx)
+ {
+diff --git a/src/thread/sh/syscall_cp.s b/src/thread/sh/syscall_cp.s
+index c3cafac..bb848ef 100644
+--- a/src/thread/sh/syscall_cp.s
++++ b/src/thread/sh/syscall_cp.s
+@@ -14,17 +14,8 @@ __syscall_cp_asm:
+ __cp_begin:
+ 	mov.l @r4, r4
+ 	tst   r4, r4
+-	bt    2f
+-
+-	mov.l L1, r0
+-	braf  r0
+-	 nop
+-1:
+-
+-.align 2
+-L1:	.long __cancel@PLT-(1b-.)
+-
+-2:	mov   r5, r3
++	bf    __cp_cancel
++	mov   r5, r3
+ 	mov   r6, r4
+ 	mov   r7, r5
+ 	mov.l @r15, r6
+@@ -43,3 +34,12 @@ __cp_end:
+ 
+ 	rts
+ 	 nop
++
++__cp_cancel:
++	mov.l 2f, r0
++	braf  r0
++	 nop
++1:
++
++.align 2
++2:	.long __cancel@PCREL-(1b-.)
+diff --git a/src/thread/x32/syscall_cp.s b/src/thread/x32/syscall_cp.s
+index 79709a5..9805af0 100644
+--- a/src/thread/x32/syscall_cp.s
++++ b/src/thread/x32/syscall_cp.s
+@@ -14,7 +14,7 @@ __syscall_cp_internal:
+ __cp_begin:
+ 	mov (%rdi),%eax
+ 	test %eax,%eax
+-	jnz __cancel
++	jnz __cp_cancel
+ 	mov %rdi,%r11
+ 	mov %rsi,%rax
+ 	mov %rdx,%rdi
+@@ -27,3 +27,5 @@ __cp_begin:
+ 	syscall
+ __cp_end:
+ 	ret
++__cp_cancel:
++	jmp __cancel
+diff --git a/src/thread/x86_64/syscall_cp.s b/src/thread/x86_64/syscall_cp.s
+index 1a0fd5d..4f10171 100644
+--- a/src/thread/x86_64/syscall_cp.s
++++ b/src/thread/x86_64/syscall_cp.s
+@@ -14,7 +14,7 @@ __syscall_cp_asm:
+ __cp_begin:
+ 	mov (%rdi),%eax
+ 	test %eax,%eax
+-	jnz __cancel
++	jnz __cp_cancel
+ 	mov %rdi,%r11
+ 	mov %rsi,%rax
+ 	mov %rdx,%rdi
+@@ -27,3 +27,5 @@ __cp_begin:
+ 	syscall
+ __cp_end:
+ 	ret
++__cp_cancel:
++	jmp __cancel
+-- 
+2.6.2
+
+From f9ecb6bfa1dc9f93a10dad97a158e6b8334c586c Mon Sep 17 00:00:00 2001
+From: Daniel Micay <danielmicay@gmail.com>
+Date: Sat, 31 Oct 2015 05:14:45 -0400
+Subject: [PATCH 09/32] prevent allocs than PTRDIFF_MAX via mremap
+
+It's quite feasible for this to happen via MREMAP_MAYMOVE.
+---
+ src/mman/mremap.c | 9 ++++++++-
+ 1 file changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/src/mman/mremap.c b/src/mman/mremap.c
+index 596c45f..1096ace 100644
+--- a/src/mman/mremap.c
++++ b/src/mman/mremap.c
+@@ -1,5 +1,7 @@
+ #include <unistd.h>
+ #include <sys/mman.h>
++#include <errno.h>
++#include <stdint.h>
+ #include <stdarg.h>
+ #include "syscall.h"
+ #include "libc.h"
+@@ -8,7 +10,12 @@ void *__mremap(void *old_addr, size_t old_len, size_t new_len, int flags, ...)
+ {
+ 	va_list ap;
+ 	void *new_addr;
+-	
++
++	if (new_len >= PTRDIFF_MAX) {
++		errno = ENOMEM;
++		return MAP_FAILED;
++	}
++
+ 	va_start(ap, flags);
+ 	new_addr = va_arg(ap, void *);
+ 	va_end(ap);
+-- 
+2.6.2
+
+From fda365a53074f97f3213caefe70ea13297acecb2 Mon Sep 17 00:00:00 2001
+From: Rich Felker <dalias@aerifal.cx>
+Date: Mon, 2 Nov 2015 16:37:51 -0500
+Subject: [PATCH 10/32] fix mremap memory synchronization and use of variadic
+ argument
+
+since mremap with the MREMAP_FIXED flag is an operation that unmaps
+existing mappings, it needs to use the vm lock mechanism to ensure
+that any in-progress synchronization operations using vm identities
+from before the call have finished.
+
+also, the variadic argument was erroneously being read even if the
+MREMAP_FIXED flag was not passed. in practice this didn't break
+anything, but it's UB and in theory LTO could turn it into a hard
+error.
+---
+ src/mman/mremap.c | 15 +++++++++++----
+ 1 file changed, 11 insertions(+), 4 deletions(-)
+
+diff --git a/src/mman/mremap.c b/src/mman/mremap.c
+index 1096ace..ce4e8ea 100644
+--- a/src/mman/mremap.c
++++ b/src/mman/mremap.c
+@@ -1,3 +1,4 @@
++#define _GNU_SOURCE
+ #include <unistd.h>
+ #include <sys/mman.h>
+ #include <errno.h>
+@@ -6,19 +7,25 @@
+ #include "syscall.h"
+ #include "libc.h"
+ 
++static void dummy(void) { }
++weak_alias(dummy, __vm_wait);
++
+ void *__mremap(void *old_addr, size_t old_len, size_t new_len, int flags, ...)
+ {
+ 	va_list ap;
+-	void *new_addr;
++	void *new_addr = 0;
+ 
+ 	if (new_len >= PTRDIFF_MAX) {
+ 		errno = ENOMEM;
+ 		return MAP_FAILED;
+ 	}
+ 
+-	va_start(ap, flags);
+-	new_addr = va_arg(ap, void *);
+-	va_end(ap);
++	if (flags & MREMAP_FIXED) {
++		__vm_wait();
++		va_start(ap, flags);
++		new_addr = va_arg(ap, void *);
++		va_end(ap);
++	}
+ 
+ 	return (void *)syscall(SYS_mremap, old_addr, old_len, new_len, flags, new_addr);
+ }
+-- 
+2.6.2
+
+From 4cd8b4725907651f329e2f96d428c4e3521643f8 Mon Sep 17 00:00:00 2001
+From: Rich Felker <dalias@aerifal.cx>
+Date: Mon, 2 Nov 2015 16:58:14 -0500
+Subject: [PATCH 11/32] keep user-provided CFLAGS/LDFLAGS separate from those
+ added by configure
+
+this way, overriding these variables on the make command line (or just
+re-passing the originally-passed values when invoking make) won't
+suppress use of the flags added by configure.
+---
+ Makefile  | 12 ++++++++----
+ configure |  6 ++++--
+ 2 files changed, 12 insertions(+), 6 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index b2226fa..2b21015 100644
+--- a/Makefile
++++ b/Makefile
+@@ -23,18 +23,22 @@ GENH = include/bits/alltypes.h
+ GENH_INT = src/internal/version.h
+ IMPH = src/internal/stdio_impl.h src/internal/pthread_impl.h src/internal/libc.h
+ 
+-LDFLAGS = 
++LDFLAGS =
++LDFLAGS_AUTO =
+ LIBCC = -lgcc
+ CPPFLAGS =
+-CFLAGS = -Os -pipe
++CFLAGS =
++CFLAGS_AUTO = -Os -pipe
+ CFLAGS_C99FSE = -std=c99 -ffreestanding -nostdinc 
+ 
+ CFLAGS_ALL = $(CFLAGS_C99FSE)
+ CFLAGS_ALL += -D_XOPEN_SOURCE=700 -I./arch/$(ARCH) -I./src/internal -I./include
+-CFLAGS_ALL += $(CPPFLAGS) $(CFLAGS)
++CFLAGS_ALL += $(CPPFLAGS) $(CFLAGS_AUTO) $(CFLAGS)
+ CFLAGS_ALL_STATIC = $(CFLAGS_ALL)
+ CFLAGS_ALL_SHARED = $(CFLAGS_ALL) -fPIC -DSHARED
+ 
++LDFLAGS_ALL = $(LDFLAGS_AUTO) $(LDFLAGS)
++
+ AR      = $(CROSS_COMPILE)ar
+ RANLIB  = $(CROSS_COMPILE)ranlib
+ INSTALL = ./tools/install.sh
+@@ -146,7 +150,7 @@ endif
+ 	$(CC) $(CFLAGS_ALL_SHARED) -c -o $@ $<
+ 
+ lib/libc.so: $(LOBJS)
+-	$(CC) $(CFLAGS_ALL_SHARED) $(LDFLAGS) -nostdlib -shared \
++	$(CC) $(CFLAGS_ALL_SHARED) $(LDFLAGS_ALL) -nostdlib -shared \
+ 	-Wl,-e,_dlstart -Wl,-Bsymbolic-functions \
+ 	-o $@ $(LOBJS) $(LIBCC)
+ 
+diff --git a/configure b/configure
+index 742ca26..3e536f5 100755
+--- a/configure
++++ b/configure
+@@ -629,12 +629,14 @@ libdir = $libdir
+ includedir = $includedir
+ syslibdir = $syslibdir
+ CC = $CC
+-CFLAGS = $CFLAGS_AUTO $CFLAGS
++CFLAGS = $CFLAGS
++CFLAGS_AUTO = $CFLAGS_AUTO
+ CFLAGS_C99FSE = $CFLAGS_C99FSE
+ CFLAGS_MEMOPS = $CFLAGS_MEMOPS
+ CFLAGS_NOSSP = $CFLAGS_NOSSP
+ CPPFLAGS = $CPPFLAGS
+-LDFLAGS = $LDFLAGS_AUTO $LDFLAGS
++LDFLAGS = $LDFLAGS
++LDFLAGS_AUTO = $LDFLAGS_AUTO
+ CROSS_COMPILE = $CROSS_COMPILE
+ LIBCC = $LIBCC
+ OPTIMIZE_GLOBS = $OPTIMIZE_GLOBS
+-- 
+2.6.2
+
+From 4fcb48275adbe1959852d298425e2da610708975 Mon Sep 17 00:00:00 2001
+From: Rich Felker <dalias@aerifal.cx>
+Date: Mon, 2 Nov 2015 18:11:36 -0500
+Subject: [PATCH 12/32] generalize sh entry point asm not to assume call dests
+ fit in 12 bits
+
+this assumption is borderline-unsafe to begin with, and fails badly
+with -ffunction-sections since the linker can move the callee
+arbitrarily far away when it lies in a different section.
+---
+ arch/sh/crt_arch.h | 17 ++++++++++++-----
+ 1 file changed, 12 insertions(+), 5 deletions(-)
+
+diff --git a/arch/sh/crt_arch.h b/arch/sh/crt_arch.h
+index 948bcb7..f341c8f 100644
+--- a/arch/sh/crt_arch.h
++++ b/arch/sh/crt_arch.h
+@@ -22,7 +22,8 @@ START ": \n"
+ "	mov.l 1f, r5 \n"
+ "	mov.l 1f+4, r6 \n"
+ "	add r0, r5 \n"
+-"	bsr __fdpic_fixup \n"
++"	mov.l 4f, r1 \n"
++"5:	bsrf r1 \n"
+ "	 add r0, r6 \n"
+ "	mov r0, r12 \n"
+ #endif
+@@ -31,11 +32,16 @@ START ": \n"
+ "	mov.l r9, @-r15 \n"
+ "	mov.l r8, @-r15 \n"
+ "	mov #-16, r0 \n"
+-"	bsr " START "_c \n"
++"	mov.l 2f, r1 \n"
++"3:	bsrf r1 \n"
+ "	 and r0, r15 \n"
+ ".align 2 \n"
+ "1:	.long __ROFIXUP_LIST__@PCREL \n"
+ "	.long __ROFIXUP_END__@PCREL + 4 \n"
++"2:	.long " START "_c@PCREL - (3b+4-.) \n"
++#ifndef SHARED
++"4:	.long __fdpic_fixup@PCREL - (5b+4-.) \n"
++#endif
+ );
+ 
+ #ifndef SHARED
+@@ -53,13 +59,14 @@ START ": \n"
+ "	add r0, r5 \n"
+ "	mov r15, r4 \n"
+ "	mov #-16, r0 \n"
+-"	and r0, r15 \n"
+-"	bsr " START "_c \n"
+-"	nop \n"
++"	mov.l 2f, r1 \n"
++"3:	bsrf r1 \n"
++"	 and r0, r15 \n"
+ ".align 2 \n"
+ ".weak _DYNAMIC \n"
+ ".hidden _DYNAMIC \n"
+ "1:	.long _DYNAMIC-. \n"
++"2:	.long " START "_c@PCREL - (3b+4-.) \n"
+ );
+ 
+ #endif
+-- 
+2.6.2
+
+From 2f1d1f1ec538c4fa9b62358cf0d3dba5e646a572 Mon Sep 17 00:00:00 2001
+From: Rich Felker <dalias@aerifal.cx>
+Date: Mon, 2 Nov 2015 21:44:57 -0500
+Subject: [PATCH 13/32] fix mismatched parens in CMPLX def for
+ annex-g-conforming compilers
+
+this conditional path was never tested because there are no compilers
+that conform to annex g (none with _Imaginary_I).
+---
+ include/complex.h | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/include/complex.h b/include/complex.h
+index 4d21728..008b3c7 100644
+--- a/include/complex.h
++++ b/include/complex.h
+@@ -116,7 +116,7 @@ long double creall(long double complex);
+ 
+ #if __STDC_VERSION__ >= 201112L
+ #if defined(_Imaginary_I)
+-#define __CMPLX(x, y, t) ((t)(x) + _Imaginary_I*(t)(y)))
++#define __CMPLX(x, y, t) ((t)(x) + _Imaginary_I*(t)(y))
+ #elif defined(__clang__)
+ #define __CMPLX(x, y, t) (+(_Complex t){ (t)(x), (t)(y) })
+ #else
+-- 
+2.6.2
+
+From 27c1eccf33ce5cb7508ef5e541daa9b6441b4a51 Mon Sep 17 00:00:00 2001
+From: Rich Felker <dalias@aerifal.cx>
+Date: Wed, 4 Nov 2015 13:24:11 -0500
+Subject: [PATCH 14/32] have configure check/add -ffunction-sections and
+ -fdata-sections
+
+based on patch by Denys Vlasenko. the original intent for using these
+options was to enable linking optimizations. these are immediately
+available for static linking applications to libc.a, and will also be
+used for linking libc.so in a subsequent commit.
+
+in addition to the original motives, this change works around a whole
+class of toolchain bugs where the compiler generates relative address
+expressions using a weak symbol and the assembler "optimizes out" the
+relocation which should result by using the weak definition. (see gas
+pr 18561 and gcc pr 66609, 68178, etc. for examples.) by having
+different functions and data objects in their own sections, all
+relative address expressions are cross-section and thus cannot be
+resolved to constants until link time. this allows us to retain
+support for affected compiler/assembler versions without invasive
+and fragile source-level workarounds.
+---
+ configure | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/configure b/configure
+index 3e536f5..1e5c4b3 100755
+--- a/configure
++++ b/configure
+@@ -437,6 +437,17 @@ tryflag CFLAGS_AUTO -fno-unwind-tables
+ tryflag CFLAGS_AUTO -fno-asynchronous-unwind-tables
+ 
+ #
++# Attempt to put each function and each data object in its own
++# section. This both allows additional size optimizations at link
++# time and works around a dangerous class of compiler/assembler bugs
++# whereby relative address expressions are constant-folded by the
++# assembler even when one or more of the symbols involved is
++# replaceable. See gas pr 18561 and gcc pr 66609, 68178, etc.
++#
++tryflag CFLAGS_AUTO -ffunction-sections
++tryflag CFLAGS_AUTO -fdata-sections
++
++#
+ # On x86, make sure we don't have incompatible instruction set
+ # extensions enabled by default. This is bad for making static binaries.
+ # We cheat and use i486 rather than i386 because i386 really does not
+-- 
+2.6.2
+
+From 2efd38e8c70f00ca6bbc1eb5199aa507d45436cf Mon Sep 17 00:00:00 2001
+From: Rich Felker <dalias@aerifal.cx>
+Date: Wed, 4 Nov 2015 21:39:13 -0500
+Subject: [PATCH 15/32] have configure check/add linker options to reduce size
+ lost to padding
+
+based on patch by Denys Vlasenko. sorting sections and common data
+symbols by alignment acts as an approximation for optimal packing,
+which the linker does not actually support.
+---
+ configure | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/configure b/configure
+index 1e5c4b3..d04c860 100755
+--- a/configure
++++ b/configure
+@@ -515,6 +515,12 @@ CFLAGS_AUTO="$CFLAGS_AUTO -include vis.h"
+ CFLAGS_AUTO="${CFLAGS_AUTO# }"
+ fi
+ 
++# Reduce space lost to padding for alignment purposes by sorting data
++# objects according to their alignment reqirements. This approximates
++# optimal packing.
++tryldflag LDFLAGS_AUTO -Wl,--sort-section,alignment
++tryldflag LDFLAGS_AUTO -Wl,--sort-common
++
+ # Some patched GCC builds have these defaults messed up...
+ tryldflag LDFLAGS_AUTO -Wl,--hash-style=both
+ 
+-- 
+2.6.2
+
+From 6a851e3ab8a1ae524b2aa6218615ec1c86528e9c Mon Sep 17 00:00:00 2001
+From: Rich Felker <dalias@aerifal.cx>
+Date: Wed, 4 Nov 2015 21:40:36 -0500
+Subject: [PATCH 16/32] have configure check/add --gc-sections linker option
+
+this allowing the linker to drop certain weak definitions that are
+only used as dummies for static linking. they could be eliminated for
+shared library builds using the preprocessor instead, but we are
+trying to transition to using the same object files for shared and
+static libc, so a link-time solution is preferable.
+---
+ configure | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/configure b/configure
+index d04c860..dece1d0 100755
+--- a/configure
++++ b/configure
+@@ -521,6 +521,10 @@ fi
+ tryldflag LDFLAGS_AUTO -Wl,--sort-section,alignment
+ tryldflag LDFLAGS_AUTO -Wl,--sort-common
+ 
++# When linking shared library, drop dummy weak definitions that were
++# replaced by strong definitions from other translation units.
++tryldflag LDFLAGS_AUTO -Wl,--gc-sections
++
+ # Some patched GCC builds have these defaults messed up...
+ tryldflag LDFLAGS_AUTO -Wl,--hash-style=both
+ 
+-- 
+2.6.2
+
+From 918b1c1d177b5e3cf22a8aae4a01776495fdc3bc Mon Sep 17 00:00:00 2001
+From: Rich Felker <dalias@aerifal.cx>
+Date: Wed, 4 Nov 2015 21:41:29 -0500
+Subject: [PATCH 17/32] remove external linkage from __simple_malloc definition
+
+this function is used only as a weak definition for malloc, for static
+linking in programs which do not call realloc or free. since it had
+external linkage and was thereby exported in libc.so's dynamic symbol
+table, --gc-sections was unable to drop it. this was merely an
+oversight; there's no reason for it to be external, so make it static.
+---
+ src/malloc/lite_malloc.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/malloc/lite_malloc.c b/src/malloc/lite_malloc.c
+index 09ac575..a7e4a9f 100644
+--- a/src/malloc/lite_malloc.c
++++ b/src/malloc/lite_malloc.c
+@@ -8,7 +8,7 @@
+ 
+ void *__expand_heap(size_t *);
+ 
+-void *__simple_malloc(size_t n)
++static void *__simple_malloc(size_t n)
+ {
+ 	static char *cur, *end;
+ 	static volatile int lock[2];
+-- 
+2.6.2
+
+From 8984b5837a10dcdc654ef5b7948c1377ddd80a02 Mon Sep 17 00:00:00 2001
+From: Rich Felker <dalias@libc.org>
+Date: Sun, 18 Oct 2015 20:17:43 -0400
+Subject: [PATCH 18/32] convert arm memcpy asm to UAL, remove .word hacks
+
+contrary to commit 9367fe926196f407705bb07cd29c6e40eb1774dd, all
+relevant gas versions actually do support .syntax unified.
+---
+ src/string/armel/memcpy.s | 46 ++++++++++++++++++++++++----------------------
+ 1 file changed, 24 insertions(+), 22 deletions(-)
+
+diff --git a/src/string/armel/memcpy.s b/src/string/armel/memcpy.s
+index 9c5e38d..5416403 100644
+--- a/src/string/armel/memcpy.s
++++ b/src/string/armel/memcpy.s
+@@ -42,6 +42,8 @@
+  * of prefetch code that is not compatible with older cpus.
+  */
+ 
++.syntax unified
++
+ .global memcpy
+ .type memcpy,%function
+ memcpy:
+@@ -73,12 +75,12 @@ memcpy:
+ 	 */
+ 	movs    r12, r3, lsl #31
+ 	sub     r2, r2, r3              /* we know that r3 <= r2 because r2 >= 4 */
+-	.word 0x44d13001 /* ldrbmi r3, [r1], #1 */
+-	.word 0x24d14001 /* ldrbcs r4, [r1], #1 */
+-	.word 0x24d1c001 /* ldrbcs r12,[r1], #1 */
+-	.word 0x44c03001 /* strbmi r3, [r0], #1 */
+-	.word 0x24c04001 /* strbcs r4, [r0], #1 */
+-	.word 0x24c0c001 /* strbcs r12,[r0], #1 */
++	ldrbmi r3, [r1], #1
++	ldrbcs r4, [r1], #1
++	ldrbcs r12,[r1], #1
++	strbmi r3, [r0], #1
++	strbcs r4, [r0], #1
++	strbcs r12,[r0], #1
+ 
+ src_aligned:
+ 
+@@ -177,12 +179,12 @@ less_than_32_left:
+ 	stmmi   r0!, {r8, r9}
+ 	movs    r12, r2, lsl #30
+ 	ldrcs   r3, [r1], #4                    /*  4 bytes */
+-	.word 0x40d140b2 /* ldrhmi r4, [r1], #2 */ /*  2 bytes */
++	ldrhmi r4, [r1], #2                     /*  2 bytes */
+ 	strcs   r3, [r0], #4
+-	.word 0x40c040b2 /* strhmi r4, [r0], #2 */
++	strhmi r4, [r0], #2
+ 	tst     r2, #0x1
+-	.word 0x15d13000 /* ldrbne r3, [r1] */  /*  last byte  */
+-	.word 0x15c03000 /* strbne r3, [r0] */
++	ldrbne r3, [r1]                         /*  last byte  */
++	strbne r3, [r0]
+ 
+ 	/* we're done! restore everything and return */
+ 1:      ldmfd   sp!, {r5-r11}
+@@ -224,11 +226,11 @@ non_congruent:
+ 	 * becomes aligned to 32 bits (r5 = nb of words to copy for alignment)
+ 	 */
+ 	movs    r5, r5, lsl #31
+-	.word 0x44c03001 /* strbmi r3, [r0], #1 */
++	strbmi r3, [r0], #1
+ 	movmi   r3, r3, lsr #8
+-	.word 0x24c03001 /* strbcs r3, [r0], #1 */
++	strbcs r3, [r0], #1
+ 	movcs   r3, r3, lsr #8
+-	.word 0x24c03001 /* strbcs r3, [r0], #1 */
++	strbcs r3, [r0], #1
+ 	movcs   r3, r3, lsr #8
+ 
+ 	cmp     r2, #4
+@@ -355,23 +357,23 @@ less_than_thirtytwo:
+ partial_word_tail:
+ 	/* we have a partial word in the input buffer */
+ 	movs    r5, lr, lsl #(31-3)
+-	.word 0x44c03001 /* strbmi r3, [r0], #1 */
++	strbmi r3, [r0], #1
+ 	movmi   r3, r3, lsr #8
+-	.word 0x24c03001 /* strbcs r3, [r0], #1 */
++	strbcs r3, [r0], #1
+ 	movcs   r3, r3, lsr #8
+-	.word 0x24c03001 /* strbcs r3, [r0], #1 */
++	strbcs r3, [r0], #1
+ 
+ 	/* Refill spilled registers from the stack. Don't update sp. */
+ 	ldmfd   sp, {r5-r11}
+ 
+ copy_last_3_and_return:
+ 	movs    r2, r2, lsl #31 /* copy remaining 0, 1, 2 or 3 bytes */
+-	.word 0x44d12001 /* ldrbmi r2, [r1], #1 */
+-	.word 0x24d13001 /* ldrbcs r3, [r1], #1 */
+-	.word 0x25d1c000 /* ldrbcs r12,[r1] */
+-	.word 0x44c02001 /* strbmi r2, [r0], #1 */
+-	.word 0x24c03001 /* strbcs r3, [r0], #1 */
+-	.word 0x25c0c000 /* strbcs r12,[r0] */
++	ldrbmi r2, [r1], #1
++	ldrbcs r3, [r1], #1
++	ldrbcs r12,[r1]
++	strbmi r2, [r0], #1
++	strbcs r3, [r0], #1
++	strbcs r12,[r0]
+ 
+ 	/* we're done! restore sp and spilled registers and return */
+ 	add     sp,  sp, #28
+-- 
+2.6.2
+
+From 31d73a560b2e14a2030f92f238064e1e98215e50 Mon Sep 17 00:00:00 2001
+From: Szabolcs Nagy <nsz@port70.net>
+Date: Thu, 5 Nov 2015 18:13:11 -0500
+Subject: [PATCH 19/32] use vfp mnemonics instead of p10 coprocessor ones in
+ armhf fenv asm
+
+mrc/mcr p10 coprocessor mnemonics are deprecated by some
+toolchains.
+---
+ src/fenv/armhf/fenv.s | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/src/fenv/armhf/fenv.s b/src/fenv/armhf/fenv.s
+index c1ffd2e..e447ca1 100644
+--- a/src/fenv/armhf/fenv.s
++++ b/src/fenv/armhf/fenv.s
+@@ -3,17 +3,17 @@
+ .global fegetround
+ .type fegetround,%function
+ fegetround:
+-	mrc p10, 7, r0, cr1, cr0, 0
++	fmrx r0, fpscr
+ 	and r0, r0, #0xc00000
+ 	bx lr
+ 
+ .global __fesetround
+ .type __fesetround,%function
+ __fesetround:
+-	mrc p10, 7, r3, cr1, cr0, 0
++	fmrx r3, fpscr
+ 	bic r3, r3, #0xc00000
+ 	orr r3, r3, r0
+-	mcr p10, 7, r3, cr1, cr0, 0
++	fmxr fpscr, r3
+ 	mov r0, #0
+ 	bx lr
+ 
+@@ -21,7 +21,7 @@ __fesetround:
+ .type fetestexcept,%function
+ fetestexcept:
+ 	and r0, r0, #0x1f
+-	mrc p10, 7, r3, cr1, cr0, 0
++	fmrx r3, fpscr
+ 	and r0, r0, r3
+ 	bx lr
+ 
+@@ -29,9 +29,9 @@ fetestexcept:
+ .type feclearexcept,%function
+ feclearexcept:
+ 	and r0, r0, #0x1f
+-	mrc p10, 7, r3, cr1, cr0, 0
++	fmrx r3, fpscr
+ 	bic r3, r3, r0
+-	mcr p10, 7, r3, cr1, cr0, 0
++	fmxr fpscr, r3
+ 	mov r0, #0
+ 	bx lr
+ 
+@@ -39,16 +39,16 @@ feclearexcept:
+ .type feraiseexcept,%function
+ feraiseexcept:
+ 	and r0, r0, #0x1f
+-	mrc p10, 7, r3, cr1, cr0, 0
++	fmrx r3, fpscr
+ 	orr r3, r3, r0
+-	mcr p10, 7, r3, cr1, cr0, 0
++	fmxr fpscr, r3
+ 	mov r0, #0
+ 	bx lr
+ 
+ .global fegetenv
+ .type fegetenv,%function
+ fegetenv:
+-	mrc p10, 7, r3, cr1, cr0, 0
++	fmrx r3, fpscr
+ 	str r3, [r0]
+ 	mov r0, #0
+ 	bx lr
+@@ -59,6 +59,6 @@ fesetenv:
+ 	cmn r0, #1
+ 	moveq r3, #0
+ 	ldrne r3, [r0]
+-	mcr p10, 7, r3, cr1, cr0, 0
++	fmxr fpscr, r3
+ 	mov r0, #0
+ 	bx lr
+-- 
+2.6.2
+
+From ea1e2c5e18dd0790fb9b2af2bd947f4981736dc2 Mon Sep 17 00:00:00 2001
+From: Rich Felker <dalias@aerifal.cx>
+Date: Sat, 7 Nov 2015 20:23:49 -0500
+Subject: [PATCH 20/32] work around toolchains with broken visibility in
+ libgcc/libpcc
+
+---
+ configure | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/configure b/configure
+index dece1d0..ee21771 100755
+--- a/configure
++++ b/configure
+@@ -534,6 +534,11 @@ tryldflag LDFLAGS_AUTO -Wl,--hash-style=both
+ # runtime library; implementation error is also a possibility.
+ tryldflag LDFLAGS_AUTO -Wl,--no-undefined
+ 
++# Avoid exporting symbols from compiler runtime libraries. They
++# should be hidden anyway, but some toolchains including old gcc
++# versions built without shared library support and pcc are broken.
++tryldflag LDFLAGS_AUTO -Wl,--exclude-libs=ALL
++
+ test "$shared" = "no" || {
+ # Disable dynamic linking if ld is broken and can't do -Bsymbolic-functions
+ LDFLAGS_DUMMY=
+-- 
+2.6.2
+
+From cf40375e8fd14fc02a850af90b145d324d0381b5 Mon Sep 17 00:00:00 2001
+From: Rich Felker <dalias@aerifal.cx>
+Date: Mon, 9 Nov 2015 21:14:07 -0500
+Subject: [PATCH 21/32] use vfp mnemonics rather than hard-coded opcodes in arm
+ setjmp/longjmp
+
+the code to save/restore vfp registers needs to build even when the
+configured target does not have fpu; this is because code using vfp
+fpu (but with the standard soft-float EABI) may call a libc built for
+a soft-float only, and the EABI considers these registers call-saved
+when they exist. thus, extra directives are used to force the
+assembler to allow vfp instructions and to avoid marking the resulting
+object files as requiring vfp.
+
+moving away from using hard-coded opcode words is necessary in order
+to eventually support producing thumb2-only output for cortex-m.
+
+conditional execution of these instructions based on hwcap flags was
+already implemented. when building for arm (non-thumb) output, the
+only currently-supported configuration, this commit does not change
+the code emitted.
+---
+ src/setjmp/arm/longjmp.s | 6 +++++-
+ src/setjmp/arm/setjmp.s  | 6 +++++-
+ 2 files changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/src/setjmp/arm/longjmp.s b/src/setjmp/arm/longjmp.s
+index c3d15ae..82bce83 100644
+--- a/src/setjmp/arm/longjmp.s
++++ b/src/setjmp/arm/longjmp.s
+@@ -20,7 +20,11 @@ longjmp:
+ 	ldc p2, cr4, [ip], #48
+ 2:	tst r1,#0x40
+ 	beq 2f
+-	.word 0xecbc8b10 /* vldmia ip!, {d8-d15} */
++	.fpu vfp
++	vldmia ip!, {d8-d15}
++	.fpu softvfp
++	.eabi_attribute 10, 0
++	.eabi_attribute 27, 0
+ 2:	tst r1,#0x200
+ 	beq 3f
+ 	ldcl p1, cr10, [ip], #8
+diff --git a/src/setjmp/arm/setjmp.s b/src/setjmp/arm/setjmp.s
+index 19f8abc..32db7d8 100644
+--- a/src/setjmp/arm/setjmp.s
++++ b/src/setjmp/arm/setjmp.s
+@@ -22,7 +22,11 @@ setjmp:
+ 	stc p2, cr4, [ip], #48
+ 2:	tst r1,#0x40
+ 	beq 2f
+-	.word 0xecac8b10 /* vstmia ip!, {d8-d15} */
++	.fpu vfp
++	vstmia ip!, {d8-d15}
++	.fpu softvfp
++	.eabi_attribute 10, 0
++	.eabi_attribute 27, 0
+ 2:	tst r1,#0x200
+ 	beq 3f
+ 	stcl p1, cr10, [ip], #8
+-- 
+2.6.2
+
+From 9f290a49bf9ee247d540d3c83875288a7991699c Mon Sep 17 00:00:00 2001
+From: Rich Felker <dalias@aerifal.cx>
+Date: Mon, 9 Nov 2015 22:36:38 -0500
+Subject: [PATCH 22/32] remove non-working pre-armv4t support from arm asm
+
+the idea of the three-instruction sequence being removed was to be
+able to return to thumb code when used on armv4t+ from a thumb caller,
+but also to be able to run on armv4 without the bx instruction
+available (in which case the low bit of lr would always be 0).
+however, without compiler support for generating such a sequence from
+C code, which does not exist and which there is unlikely to be
+interest in implementing, there is little point in having it in the
+asm, and it would likely be easier to add pre-armv4t support via
+enhanced linker handling of R_ARM_V4BX than at the compiler level.
+
+removing this code simplifies adding support for building libc in
+thumb2-only form (for cortex-m).
+---
+ arch/arm/reloc.h            | 5 -----
+ arch/arm/src/arm/atomics.s  | 6 ------
+ crt/arm/crtn.s              | 4 ----
+ src/internal/arm/syscall.s  | 2 --
+ src/setjmp/arm/longjmp.s    | 4 +---
+ src/setjmp/arm/setjmp.s     | 4 +---
+ src/string/armel/memcpy.s   | 4 ----
+ src/thread/arm/clone.s      | 2 --
+ src/thread/arm/syscall_cp.s | 2 --
+ 9 files changed, 2 insertions(+), 31 deletions(-)
+
+diff --git a/arch/arm/reloc.h b/arch/arm/reloc.h
+index e1ef350..6227bd1 100644
+--- a/arch/arm/reloc.h
++++ b/arch/arm/reloc.h
+@@ -28,10 +28,5 @@
+ #define REL_TPOFF       R_ARM_TLS_TPOFF32
+ //#define REL_TLSDESC     R_ARM_TLS_DESC
+ 
+-#ifdef __thumb__
+ #define CRTJMP(pc,sp) __asm__ __volatile__( \
+ 	"mov sp,%1 ; bx %0" : : "r"(pc), "r"(sp) : "memory" )
+-#else
+-#define CRTJMP(pc,sp) __asm__ __volatile__( \
+-	"mov sp,%1 ; tst %0,#1 ; moveq pc,%0 ; bx %0" : : "r"(pc), "r"(sp) : "memory" )
+-#endif
+diff --git a/arch/arm/src/arm/atomics.s b/arch/arm/src/arm/atomics.s
+index f241cc0..ecf3f05 100644
+--- a/arch/arm/src/arm/atomics.s
++++ b/arch/arm/src/arm/atomics.s
+@@ -11,8 +11,6 @@ __a_barrier:
+ .global __a_barrier_dummy
+ .hidden __a_barrier_dummy
+ __a_barrier_dummy:
+-	tst lr,#1
+-	moveq pc,lr
+ 	bx lr
+ .global __a_barrier_oldkuser
+ .hidden __a_barrier_oldkuser
+@@ -24,8 +22,6 @@ __a_barrier_oldkuser:
+ 	mov lr,pc
+ 	mov pc,ip
+ 	pop {r0,r1,r2,r3,ip,lr}
+-	tst lr,#1
+-	moveq pc,lr
+ 	bx lr
+ .global __a_barrier_v6
+ .hidden __a_barrier_v6
+@@ -53,8 +49,6 @@ __a_cas_dummy:
+ 	ldr r0,[r2]
+ 	subs r0,r3,r0
+ 	streq r1,[r2]
+-	tst lr,#1
+-	moveq pc,lr
+ 	bx lr
+ .global __a_cas_v6
+ .hidden __a_cas_v6
+diff --git a/crt/arm/crtn.s b/crt/arm/crtn.s
+index 1b626c0..b3eca85 100644
+--- a/crt/arm/crtn.s
++++ b/crt/arm/crtn.s
+@@ -1,11 +1,7 @@
+ .section .init
+ 	pop {r0,lr}
+-	tst lr,#1
+-	moveq pc,lr
+ 	bx lr
+ 
+ .section .fini
+ 	pop {r0,lr}
+-	tst lr,#1
+-	moveq pc,lr
+ 	bx lr
+diff --git a/src/internal/arm/syscall.s b/src/internal/arm/syscall.s
+index 2028456..28cb17b 100644
+--- a/src/internal/arm/syscall.s
++++ b/src/internal/arm/syscall.s
+@@ -11,6 +11,4 @@ __syscall:
+ 	ldmfd ip,{r3,r4,r5,r6}
+ 	svc 0
+ 	ldmfd sp!,{r4,r5,r6,r7}
+-	tst lr,#1
+-	moveq pc,lr
+ 	bx lr
+diff --git a/src/setjmp/arm/longjmp.s b/src/setjmp/arm/longjmp.s
+index 82bce83..7db93e8 100644
+--- a/src/setjmp/arm/longjmp.s
++++ b/src/setjmp/arm/longjmp.s
+@@ -33,9 +33,7 @@ longjmp:
+ 	ldcl p1, cr13, [ip], #8
+ 	ldcl p1, cr14, [ip], #8
+ 	ldcl p1, cr15, [ip], #8
+-3:	tst lr,#1
+-	moveq pc,lr
+-	bx lr
++3:	bx lr
+ 
+ .hidden __hwcap
+ 1:	.word __hwcap-1b
+diff --git a/src/setjmp/arm/setjmp.s b/src/setjmp/arm/setjmp.s
+index 32db7d8..61425ad 100644
+--- a/src/setjmp/arm/setjmp.s
++++ b/src/setjmp/arm/setjmp.s
+@@ -35,9 +35,7 @@ setjmp:
+ 	stcl p1, cr13, [ip], #8
+ 	stcl p1, cr14, [ip], #8
+ 	stcl p1, cr15, [ip], #8
+-3:	tst lr,#1
+-	moveq pc,lr
+-	bx lr
++3:	bx lr
+ 
+ .hidden __hwcap
+ 1:	.word __hwcap-1b
+diff --git a/src/string/armel/memcpy.s b/src/string/armel/memcpy.s
+index 5416403..b16be0d 100644
+--- a/src/string/armel/memcpy.s
++++ b/src/string/armel/memcpy.s
+@@ -189,8 +189,6 @@ less_than_32_left:
+ 	/* we're done! restore everything and return */
+ 1:      ldmfd   sp!, {r5-r11}
+ 	ldmfd   sp!, {r0, r4, lr}
+-	tst     lr, #1
+-	moveq   pc, lr
+ 	bx      lr
+ 
+ 	/********************************************************************/
+@@ -378,6 +376,4 @@ copy_last_3_and_return:
+ 	/* we're done! restore sp and spilled registers and return */
+ 	add     sp,  sp, #28
+ 	ldmfd   sp!, {r0, r4, lr}
+-	tst     lr, #1
+-	moveq   pc, lr
+ 	bx      lr
+diff --git a/src/thread/arm/clone.s b/src/thread/arm/clone.s
+index d146999..b7fb788 100644
+--- a/src/thread/arm/clone.s
++++ b/src/thread/arm/clone.s
+@@ -15,8 +15,6 @@ __clone:
+ 	tst r0,r0
+ 	beq 1f
+ 	ldmfd sp!,{r4,r5,r6,r7}
+-	tst lr,#1
+-	moveq pc,lr
+ 	bx lr
+ 
+ 1:	mov r0,r6
+diff --git a/src/thread/arm/syscall_cp.s b/src/thread/arm/syscall_cp.s
+index 96ce613..64528b3 100644
+--- a/src/thread/arm/syscall_cp.s
++++ b/src/thread/arm/syscall_cp.s
+@@ -22,8 +22,6 @@ __cp_begin:
+ 	svc 0
+ __cp_end:
+ 	ldmfd sp!,{r4,r5,r6,r7,lr}
+-	tst lr,#1
+-	moveq pc,lr
+ 	bx lr
+ __cp_cancel:
+ 	ldmfd sp!,{r4,r5,r6,r7,lr}
+-- 
+2.6.2
+
+From 4e73d12117e362ad4b82946dc084b4a38f76e54b Mon Sep 17 00:00:00 2001
+From: Rich Felker <dalias@aerifal.cx>
+Date: Tue, 10 Nov 2015 00:01:55 -0500
+Subject: [PATCH 23/32] explicitly assemble all arm asm sources as UAL
+
+these files are all accepted as legacy arm syntax when producing arm
+code, but legacy syntax cannot be used for producing thumb2 with
+access to the full ISA. even after switching to UAL, some asm source
+files contain instructions which are not valid in thumb mode, so these
+will need to be addressed separately.
+---
+ arch/arm/src/arm/atomics.s   | 1 +
+ crt/arm/crti.s               | 2 ++
+ crt/arm/crtn.s               | 2 ++
+ src/fenv/armhf/fenv.s        | 1 +
+ src/internal/arm/syscall.s   | 1 +
+ src/ldso/arm/dlsym.s         | 1 +
+ src/math/armhf/fabs.s        | 1 +
+ src/math/armhf/fabsf.s       | 1 +
+ src/math/armhf/sqrt.s        | 1 +
+ src/math/armhf/sqrtf.s       | 1 +
+ src/setjmp/arm/longjmp.s     | 1 +
+ src/setjmp/arm/setjmp.s      | 1 +
+ src/signal/arm/restore.s     | 2 ++
+ src/signal/arm/sigsetjmp.s   | 1 +
+ src/thread/arm/__unmapself.s | 1 +
+ src/thread/arm/clone.s       | 1 +
+ src/thread/arm/syscall_cp.s  | 1 +
+ 17 files changed, 20 insertions(+)
+
+diff --git a/arch/arm/src/arm/atomics.s b/arch/arm/src/arm/atomics.s
+index ecf3f05..5c5b0e3 100644
+--- a/arch/arm/src/arm/atomics.s
++++ b/arch/arm/src/arm/atomics.s
+@@ -1,3 +1,4 @@
++.syntax unified
+ .text
+ 
+ .global __a_barrier
+diff --git a/crt/arm/crti.s b/crt/arm/crti.s
+index 1ba165c..18dc1e4 100644
+--- a/crt/arm/crti.s
++++ b/crt/arm/crti.s
+@@ -1,3 +1,5 @@
++.syntax unified
++
+ .section .init
+ .global _init
+ .type _init,%function
+diff --git a/crt/arm/crtn.s b/crt/arm/crtn.s
+index b3eca85..dc020f9 100644
+--- a/crt/arm/crtn.s
++++ b/crt/arm/crtn.s
+@@ -1,3 +1,5 @@
++.syntax unified
++
+ .section .init
+ 	pop {r0,lr}
+ 	bx lr
+diff --git a/src/fenv/armhf/fenv.s b/src/fenv/armhf/fenv.s
+index e447ca1..53307e6 100644
+--- a/src/fenv/armhf/fenv.s
++++ b/src/fenv/armhf/fenv.s
+@@ -1,3 +1,4 @@
++.syntax unified
+ .fpu vfp
+ 
+ .global fegetround
+diff --git a/src/internal/arm/syscall.s b/src/internal/arm/syscall.s
+index 28cb17b..64dba2f 100644
+--- a/src/internal/arm/syscall.s
++++ b/src/internal/arm/syscall.s
+@@ -1,3 +1,4 @@
++.syntax unified
+ .global __syscall
+ .hidden __syscall
+ .type __syscall,%function
+diff --git a/src/ldso/arm/dlsym.s b/src/ldso/arm/dlsym.s
+index 3b88d91..2652c34 100644
+--- a/src/ldso/arm/dlsym.s
++++ b/src/ldso/arm/dlsym.s
+@@ -1,3 +1,4 @@
++.syntax unified
+ .text
+ .global dlsym
+ .hidden __dlsym
+diff --git a/src/math/armhf/fabs.s b/src/math/armhf/fabs.s
+index 8a705e1..0eb458d 100644
+--- a/src/math/armhf/fabs.s
++++ b/src/math/armhf/fabs.s
+@@ -1,3 +1,4 @@
++.syntax unified
+ .fpu vfp
+ .text
+ .global fabs
+diff --git a/src/math/armhf/fabsf.s b/src/math/armhf/fabsf.s
+index 2c7beb6..da3809b 100644
+--- a/src/math/armhf/fabsf.s
++++ b/src/math/armhf/fabsf.s
+@@ -1,3 +1,4 @@
++.syntax unified
+ .fpu vfp
+ .text
+ .global fabsf
+diff --git a/src/math/armhf/sqrt.s b/src/math/armhf/sqrt.s
+index 90f74a9..e38f060 100644
+--- a/src/math/armhf/sqrt.s
++++ b/src/math/armhf/sqrt.s
+@@ -1,3 +1,4 @@
++.syntax unified
+ .fpu vfp
+ .text
+ .global sqrt
+diff --git a/src/math/armhf/sqrtf.s b/src/math/armhf/sqrtf.s
+index 91d8ad6..38c7ee8 100644
+--- a/src/math/armhf/sqrtf.s
++++ b/src/math/armhf/sqrtf.s
+@@ -1,3 +1,4 @@
++.syntax unified
+ .fpu vfp
+ .text
+ .global sqrtf
+diff --git a/src/setjmp/arm/longjmp.s b/src/setjmp/arm/longjmp.s
+index 7db93e8..e28d8f3 100644
+--- a/src/setjmp/arm/longjmp.s
++++ b/src/setjmp/arm/longjmp.s
+@@ -1,3 +1,4 @@
++.syntax unified
+ .global _longjmp
+ .global longjmp
+ .type _longjmp,%function
+diff --git a/src/setjmp/arm/setjmp.s b/src/setjmp/arm/setjmp.s
+index 61425ad..8779163 100644
+--- a/src/setjmp/arm/setjmp.s
++++ b/src/setjmp/arm/setjmp.s
+@@ -1,3 +1,4 @@
++.syntax unified
+ .global __setjmp
+ .global _setjmp
+ .global setjmp
+diff --git a/src/signal/arm/restore.s b/src/signal/arm/restore.s
+index 18f7216..22fb1a5 100644
+--- a/src/signal/arm/restore.s
++++ b/src/signal/arm/restore.s
+@@ -1,3 +1,5 @@
++.syntax unified
++
+ .global __restore
+ .type __restore,%function
+ __restore:
+diff --git a/src/signal/arm/sigsetjmp.s b/src/signal/arm/sigsetjmp.s
+index 89c020b..318addb 100644
+--- a/src/signal/arm/sigsetjmp.s
++++ b/src/signal/arm/sigsetjmp.s
+@@ -1,3 +1,4 @@
++.syntax unified
+ .global sigsetjmp
+ .global __sigsetjmp
+ .type sigsetjmp,%function
+diff --git a/src/thread/arm/__unmapself.s b/src/thread/arm/__unmapself.s
+index 62ebb7c..29c2d07 100644
+--- a/src/thread/arm/__unmapself.s
++++ b/src/thread/arm/__unmapself.s
+@@ -1,3 +1,4 @@
++.syntax unified
+ .text
+ .global __unmapself
+ .type   __unmapself,%function
+diff --git a/src/thread/arm/clone.s b/src/thread/arm/clone.s
+index b7fb788..fe2e0e6 100644
+--- a/src/thread/arm/clone.s
++++ b/src/thread/arm/clone.s
+@@ -1,3 +1,4 @@
++.syntax unified
+ .text
+ .global __clone
+ .type   __clone,%function
+diff --git a/src/thread/arm/syscall_cp.s b/src/thread/arm/syscall_cp.s
+index 64528b3..a5730c0 100644
+--- a/src/thread/arm/syscall_cp.s
++++ b/src/thread/arm/syscall_cp.s
+@@ -1,3 +1,4 @@
++.syntax unified
+ .global __cp_begin
+ .hidden __cp_begin
+ .global __cp_end
+-- 
+2.6.2
+
+From a946e8117ed51dd771bd8cac3575fc28a0399a32 Mon Sep 17 00:00:00 2001
+From: Rich Felker <dalias@aerifal.cx>
+Date: Tue, 10 Nov 2015 23:07:17 -0500
+Subject: [PATCH 24/32] fix return value of nl_langinfo for invalid item
+ arguments
+
+it was wrongly returning a null pointer instead of an empty string.
+---
+ src/locale/langinfo.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/src/locale/langinfo.c b/src/locale/langinfo.c
+index d3c90d9..b2c8569 100644
+--- a/src/locale/langinfo.c
++++ b/src/locale/langinfo.c
+@@ -37,23 +37,23 @@ char *__nl_langinfo_l(nl_item item, locale_t loc)
+ 	
+ 	switch (cat) {
+ 	case LC_NUMERIC:
+-		if (idx > 1) return NULL;
++		if (idx > 1) return "";
+ 		str = c_numeric;
+ 		break;
+ 	case LC_TIME:
+-		if (idx > 0x31) return NULL;
++		if (idx > 0x31) return "";
+ 		str = c_time;
+ 		break;
+ 	case LC_MONETARY:
+-		if (idx > 0) return NULL;
++		if (idx > 0) return "";
+ 		str = "";
+ 		break;
+ 	case LC_MESSAGES:
+-		if (idx > 3) return NULL;
++		if (idx > 3) return "";
+ 		str = c_messages;
+ 		break;
+ 	default:
+-		return NULL;
++		return "";
+ 	}
+ 
+ 	for (; idx; idx--, str++) for (; *str; str++);
+-- 
+2.6.2
+
+From 9439ebd7668182a1c6213ad1a5011bdc71585b5f Mon Sep 17 00:00:00 2001
+From: Rich Felker <dalias@aerifal.cx>
+Date: Wed, 11 Nov 2015 17:34:17 -0500
+Subject: [PATCH 25/32] fix dynamic loader library mapping for nommu systems
+
+on linux/nommu, non-writable private mappings of files may actually
+use memory shared with other processes or the fs cache. the old nommu
+loader code (used when mmap with MAP_FIXED fails) simply wrote over
+top of the original file mapping, possibly clobbering this shared
+memory. no such breakage was observed in practice, but it should have
+been possible.
+
+the new code starts by mapping anonymous writable memory on archs that
+might support nommu, then maps load segments over top of it, falling
+back to read if MAP_FIXED fails. we use an anonymous map rather than a
+writable file map to avoid reading more data from disk than needed.
+since pages cannot be loaded lazily on fault, in case of large
+data/bss, mapping the full file may read a lot of data that will
+subsequently be thrown away when processing additional LOAD segments.
+as a result, we cannot skip the first LOAD segment when operating in
+this mode.
+
+these changes affect only non-FDPIC nommu support.
+---
+ arch/sh/reloc.h        |  2 ++
+ src/internal/dynlink.h |  4 ++++
+ src/ldso/dynlink.c     | 19 +++++++++++++++----
+ 3 files changed, 21 insertions(+), 4 deletions(-)
+
+diff --git a/arch/sh/reloc.h b/arch/sh/reloc.h
+index d4fe348..0238ce0 100644
+--- a/arch/sh/reloc.h
++++ b/arch/sh/reloc.h
+@@ -32,6 +32,8 @@
+ #define REL_DTPOFF      R_SH_TLS_DTPOFF32
+ #define REL_TPOFF       R_SH_TLS_TPOFF32
+ 
++#define DL_NOMMU_SUPPORT 1
++
+ #if __SH_FDPIC__
+ #define REL_FUNCDESC    R_SH_FUNCDESC
+ #define REL_FUNCDESC_VAL R_SH_FUNCDESC_VALUE
+diff --git a/src/internal/dynlink.h b/src/internal/dynlink.h
+index 86f379e..9c494e4 100644
+--- a/src/internal/dynlink.h
++++ b/src/internal/dynlink.h
+@@ -64,6 +64,10 @@ struct fdpic_dummy_loadmap {
+ #define DL_FDPIC 0
+ #endif
+ 
++#ifndef DL_NOMMU_SUPPORT
++#define DL_NOMMU_SUPPORT 0
++#endif
++
+ #if !DL_FDPIC
+ #define IS_RELATIVE(x,s) ( \
+ 	(R_TYPE(x) == REL_RELATIVE) || \
+diff --git a/src/ldso/dynlink.c b/src/ldso/dynlink.c
+index a6484dd..5fbe2bb 100644
+--- a/src/ldso/dynlink.c
++++ b/src/ldso/dynlink.c
+@@ -482,8 +482,14 @@ static void reclaim_gaps(struct dso *dso)
+ 
+ static void *mmap_fixed(void *p, size_t n, int prot, int flags, int fd, off_t off)
+ {
+-	char *q = mmap(p, n, prot, flags, fd, off);
+-	if (q != MAP_FAILED || errno != EINVAL) return q;
++	static int no_map_fixed;
++	char *q;
++	if (!no_map_fixed) {
++		q = mmap(p, n, prot, flags|MAP_FIXED, fd, off);
++		if (!DL_NOMMU_SUPPORT || q != MAP_FAILED || errno != EINVAL)
++			return q;
++		no_map_fixed = 1;
++	}
+ 	/* Fallbacks for MAP_FIXED failure on NOMMU kernels. */
+ 	if (flags & MAP_ANONYMOUS) {
+ 		memset(p, 0, n);
+@@ -631,7 +637,11 @@ static void *map_library(int fd, struct dso *dso)
+ 	 * the length of the file. This is okay because we will not
+ 	 * use the invalid part; we just need to reserve the right
+ 	 * amount of virtual address space to map over later. */
+-	map = mmap((void *)addr_min, map_len, prot, MAP_PRIVATE, fd, off_start);
++	map = DL_NOMMU_SUPPORT
++		? mmap((void *)addr_min, map_len, PROT_READ|PROT_WRITE|PROT_EXEC,
++			MAP_PRIVATE|MAP_ANONYMOUS, -1, 0)
++		: mmap((void *)addr_min, map_len, prot,
++			MAP_PRIVATE, fd, off_start);
+ 	if (map==MAP_FAILED) goto error;
+ 	dso->map = map;
+ 	dso->map_len = map_len;
+@@ -656,7 +666,8 @@ static void *map_library(int fd, struct dso *dso)
+ 			dso->phentsize = eh->e_phentsize;
+ 		}
+ 		/* Reuse the existing mapping for the lowest-address LOAD */
+-		if ((ph->p_vaddr & -PAGE_SIZE) == addr_min) continue;
++		if ((ph->p_vaddr & -PAGE_SIZE) == addr_min && !DL_NOMMU_SUPPORT)
++			continue;
+ 		this_min = ph->p_vaddr & -PAGE_SIZE;
+ 		this_max = ph->p_vaddr+ph->p_memsz+PAGE_SIZE-1 & -PAGE_SIZE;
+ 		off_start = ph->p_offset & -PAGE_SIZE;
+-- 
+2.6.2
+
+From dc5bd27ac4eb68e7ec84dff0fd26f2ac55360989 Mon Sep 17 00:00:00 2001
+From: Rich Felker <dalias@aerifal.cx>
+Date: Wed, 11 Nov 2015 18:27:23 -0500
+Subject: [PATCH 26/32] use correct nofpu versions of setjmp/longjmp used on
+ sh-nofpu-fdpic
+
+when adding the fdpic subarchs, the need for these sub files was
+overlooked. thus setjmp and longjmp performed illegal instructions.
+---
+ src/setjmp/sh-nofpu-fdpic/longjmp.sub   | 1 +
+ src/setjmp/sh-nofpu-fdpic/setjmp.sub    | 1 +
+ src/setjmp/sheb-nofpu-fdpic/longjmp.sub | 1 +
+ src/setjmp/sheb-nofpu-fdpic/setjmp.sub  | 1 +
+ 4 files changed, 4 insertions(+)
+ create mode 100644 src/setjmp/sh-nofpu-fdpic/longjmp.sub
+ create mode 100644 src/setjmp/sh-nofpu-fdpic/setjmp.sub
+ create mode 100644 src/setjmp/sheb-nofpu-fdpic/longjmp.sub
+ create mode 100644 src/setjmp/sheb-nofpu-fdpic/setjmp.sub
+
+diff --git a/src/setjmp/sh-nofpu-fdpic/longjmp.sub b/src/setjmp/sh-nofpu-fdpic/longjmp.sub
+new file mode 100644
+index 0000000..62fcd2b
+--- /dev/null
++++ b/src/setjmp/sh-nofpu-fdpic/longjmp.sub
+@@ -0,0 +1 @@
++../sh-nofpu/longjmp.s
+diff --git a/src/setjmp/sh-nofpu-fdpic/setjmp.sub b/src/setjmp/sh-nofpu-fdpic/setjmp.sub
+new file mode 100644
+index 0000000..a5bb294
+--- /dev/null
++++ b/src/setjmp/sh-nofpu-fdpic/setjmp.sub
+@@ -0,0 +1 @@
++../sh-nofpu/setjmp.s
+diff --git a/src/setjmp/sheb-nofpu-fdpic/longjmp.sub b/src/setjmp/sheb-nofpu-fdpic/longjmp.sub
+new file mode 100644
+index 0000000..62fcd2b
+--- /dev/null
++++ b/src/setjmp/sheb-nofpu-fdpic/longjmp.sub
+@@ -0,0 +1 @@
++../sh-nofpu/longjmp.s
+diff --git a/src/setjmp/sheb-nofpu-fdpic/setjmp.sub b/src/setjmp/sheb-nofpu-fdpic/setjmp.sub
+new file mode 100644
+index 0000000..a5bb294
+--- /dev/null
++++ b/src/setjmp/sheb-nofpu-fdpic/setjmp.sub
+@@ -0,0 +1 @@
++../sh-nofpu/setjmp.s
+-- 
+2.6.2
+
+From 8a8fdf6398b85c99dffb237e47fa577e2ddc9e77 Mon Sep 17 00:00:00 2001
+From: Rich Felker <dalias@aerifal.cx>
+Date: Wed, 11 Nov 2015 19:29:45 -0500
+Subject: [PATCH 27/32] eliminate use of SHARED macro to suppress visibility
+ attributes
+
+this is the first and simplest stage of removal of the SHARED macro,
+which will eventually allow libc.a and libc.so to be produced from the
+same object files.
+
+the original motivation for these #ifdefs which are now being removed
+was to allow building a static-only libc using a compiler that does
+not support visibility. however, SHARED was the wrong condition to
+test for this anyway; various assembly-language sources refer to
+hidden symbols and declare them with the .hidden directive, making it
+wrong to define the referenced symbols as non-hidden. if there is a
+need in the future to build libc using compilers that lack visibility,
+support could be moved to the build system or perhaps the __PIC__
+macro could be checked instead of SHARED.
+---
+ src/env/__stack_chk_fail.c  | 11 +----------
+ src/internal/syscall.h      |  2 --
+ src/internal/vis.h          | 16 ++++------------
+ src/signal/sigsetjmp_tail.c |  2 --
+ src/thread/__syscall_cp.c   |  2 --
+ src/thread/pthread_cancel.c |  4 ----
+ 6 files changed, 5 insertions(+), 32 deletions(-)
+
+diff --git a/src/env/__stack_chk_fail.c b/src/env/__stack_chk_fail.c
+index be0c184..4de82fd 100644
+--- a/src/env/__stack_chk_fail.c
++++ b/src/env/__stack_chk_fail.c
+@@ -17,16 +17,7 @@ void __stack_chk_fail(void)
+ 	a_crash();
+ }
+ 
+-#ifdef SHARED
+-
+ __attribute__((__visibility__("hidden")))
+-void __stack_chk_fail_local(void)
+-{
+-	a_crash();
+-}
+-
+-#else
++void __stack_chk_fail_local(void);
+ 
+ weak_alias(__stack_chk_fail, __stack_chk_fail_local);
+-
+-#endif
+diff --git a/src/internal/syscall.h b/src/internal/syscall.h
+index a93f6d1..36c772df 100644
+--- a/src/internal/syscall.h
++++ b/src/internal/syscall.h
+@@ -17,9 +17,7 @@
+ typedef long syscall_arg_t;
+ #endif
+ 
+-#ifdef SHARED
+ __attribute__((visibility("hidden")))
+-#endif
+ long __syscall_ret(unsigned long), __syscall(syscall_arg_t, ...),
+ 	__syscall_cp(syscall_arg_t, syscall_arg_t, syscall_arg_t, syscall_arg_t,
+ 	             syscall_arg_t, syscall_arg_t, syscall_arg_t);
+diff --git a/src/internal/vis.h b/src/internal/vis.h
+index bf7a5b2..02bfbda 100644
+--- a/src/internal/vis.h
++++ b/src/internal/vis.h
+@@ -5,11 +5,11 @@
+  * of position-independent code. */
+ 
+ #ifndef CRT
+-#ifdef SHARED
+ 
+-/* For shared libc.so, all symbols should be protected, but some toolchains
++/* Conceptually, all symbols should be protected, but some toolchains
+  * fail to support copy relocations for protected data, so exclude all
+- * exported data symbols. */
++ * exported data symbols. Also omit visibility for possibly-undefined
++ * weak references. */
+ 
+ __attribute__((__visibility__("default")))
+ extern struct _IO_FILE *const stdin, *const stdout, *const stderr;
+@@ -23,18 +23,10 @@ extern long timezone, __timezone;
+ __attribute__((__visibility__("default")))
+ extern char *optarg, **environ, **__environ, *tzname[2], *__tzname[2], *__progname, *__progname_full;
+ 
+-#pragma GCC visibility push(protected)
+-
+-#elif defined(__PIC__)
+-
+-/* If building static libc.a as position-independent code, try to make
+- * everything hidden except possibly-undefined weak references. */
+-
+ __attribute__((__visibility__("default")))
+ extern void (*const __init_array_start)(), (*const __init_array_end)(),
+ 	(*const __fini_array_start)(), (*const __fini_array_end)();
+ 
+-#pragma GCC visibility push(hidden)
++#pragma GCC visibility push(protected)
+ 
+ #endif
+-#endif
+diff --git a/src/signal/sigsetjmp_tail.c b/src/signal/sigsetjmp_tail.c
+index 487ad8c..78762aa 100644
+--- a/src/signal/sigsetjmp_tail.c
++++ b/src/signal/sigsetjmp_tail.c
+@@ -2,9 +2,7 @@
+ #include <signal.h>
+ #include "syscall.h"
+ 
+-#ifdef SHARED
+ __attribute__((__visibility__("hidden")))
+-#endif
+ int __sigsetjmp_tail(sigjmp_buf jb, int ret)
+ {
+ 	void *p = jb->__ss;
+diff --git a/src/thread/__syscall_cp.c b/src/thread/__syscall_cp.c
+index faf57b1..09a2be8 100644
+--- a/src/thread/__syscall_cp.c
++++ b/src/thread/__syscall_cp.c
+@@ -1,9 +1,7 @@
+ #include "pthread_impl.h"
+ #include "syscall.h"
+ 
+-#ifdef SHARED
+ __attribute__((__visibility__("hidden")))
+-#endif
+ long __syscall_cp_c();
+ 
+ static long sccp(syscall_arg_t nr,
+diff --git a/src/thread/pthread_cancel.c b/src/thread/pthread_cancel.c
+index c4631f0..a21c386 100644
+--- a/src/thread/pthread_cancel.c
++++ b/src/thread/pthread_cancel.c
+@@ -4,9 +4,7 @@
+ #include "syscall.h"
+ #include "libc.h"
+ 
+-#ifdef SHARED
+ __attribute__((__visibility__("hidden")))
+-#endif
+ long __cancel(), __syscall_cp_asm(), __syscall_cp_c();
+ 
+ long __cancel()
+@@ -47,9 +45,7 @@ static void _sigaddset(sigset_t *set, int sig)
+ 	set->__bits[s/8/sizeof *set->__bits] |= 1UL<<(s&8*sizeof *set->__bits-1);
+ }
+ 
+-#ifdef SHARED
+ __attribute__((__visibility__("hidden")))
+-#endif
+ extern const char __cp_begin[1], __cp_end[1], __cp_cancel[1];
+ 
+ static void cancel_handler(int sig, siginfo_t *si, void *ctx)
+-- 
+2.6.2
+
+From 4aaf879eb08a22c501b43d8604e67614f7dbc55f Mon Sep 17 00:00:00 2001
+From: Rich Felker <dalias@aerifal.cx>
+Date: Wed, 11 Nov 2015 19:43:56 -0500
+Subject: [PATCH 28/32] eliminate use of SHARED macro in __tls_get_addr
+
+this was only a tiny optimization, and static-linked binaries should
+not be calling __tls_get_addr anyway since the linker is supposed to
+perform relaxation, resulting in use of the local-exec TLS model.
+---
+ src/thread/__tls_get_addr.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/src/thread/__tls_get_addr.c b/src/thread/__tls_get_addr.c
+index 84a413d..6945faa 100644
+--- a/src/thread/__tls_get_addr.c
++++ b/src/thread/__tls_get_addr.c
+@@ -1,16 +1,16 @@
+ #include <stddef.h>
+ #include "pthread_impl.h"
++#include "libc.h"
++
++__attribute__((__visibility__("hidden")))
++void *__tls_get_new(size_t *);
+ 
+ void *__tls_get_addr(size_t *v)
+ {
+ 	pthread_t self = __pthread_self();
+-#ifdef SHARED
+-	__attribute__((__visibility__("hidden")))
+-	void *__tls_get_new(size_t *);
+ 	if (v[0]<=(size_t)self->dtv[0])
+ 		return (char *)self->dtv[v[0]]+v[1]+DTP_OFFSET;
+ 	return __tls_get_new(v);
+-#else
+-	return (char *)self->dtv[1]+v[1]+DTP_OFFSET;
+-#endif
+ }
++
++weak_alias(__tls_get_addr, __tls_get_new);
+-- 
+2.6.2
+
+From ad1cd43a86645ba2d4f7c8747240452a349d6bc1 Mon Sep 17 00:00:00 2001
+From: Rich Felker <dalias@aerifal.cx>
+Date: Wed, 11 Nov 2015 22:08:23 -0500
+Subject: [PATCH 29/32] unify static and dynamic libc init/fini code paths
+
+use weak definitions that the dynamic linker can override instead of
+preprocessor conditionals on SHARED so that the same libc start and
+exit code can be used for both static and dynamic linking.
+---
+ src/env/__libc_start_main.c | 26 +++++++++++---------------
+ src/exit/exit.c             | 20 ++++++++++----------
+ src/ldso/dynlink.c          |  4 +---
+ 3 files changed, 22 insertions(+), 28 deletions(-)
+
+diff --git a/src/env/__libc_start_main.c b/src/env/__libc_start_main.c
+index d1f6a5e..7ffada0 100644
+--- a/src/env/__libc_start_main.c
++++ b/src/env/__libc_start_main.c
+@@ -8,21 +8,15 @@
+ 
+ void __init_tls(size_t *);
+ 
+-#ifndef SHARED
+-static void dummy() {}
+-weak_alias(dummy, _init);
++extern void _init() __attribute__((weak));
+ extern void (*const __init_array_start)() __attribute__((weak));
+ extern void (*const __init_array_end)() __attribute__((weak));
+-#endif
+ 
+ static void dummy1(void *p) {}
+ weak_alias(dummy1, __init_ssp);
+ 
+ #define AUX_CNT 38
+ 
+-#ifndef SHARED
+-static
+-#endif
+ void __init_libc(char **envp, char *pn)
+ {
+ 	size_t i, *auxv, aux[AUX_CNT] = { 0 };
+@@ -57,20 +51,22 @@ void __init_libc(char **envp, char *pn)
+ 	libc.secure = 1;
+ }
+ 
++static void libc_start_init(void)
++{
++	if (_init) _init();
++	uintptr_t a = (uintptr_t)&__init_array_start;
++	for (; a<(uintptr_t)&__init_array_end; a+=sizeof(void(*)()))
++		(*(void (**)())a)();
++}
++
++weak_alias(libc_start_init, __libc_start_init);
++
+ int __libc_start_main(int (*main)(int,char **,char **), int argc, char **argv)
+ {
+ 	char **envp = argv+argc+1;
+ 
+-#ifndef SHARED
+ 	__init_libc(envp, argv[0]);
+-	_init();
+-	uintptr_t a = (uintptr_t)&__init_array_start;
+-	for (; a<(uintptr_t)&__init_array_end; a+=sizeof(void(*)()))
+-		(*(void (**)())a)();
+-#else
+-	void __libc_start_init(void);
+ 	__libc_start_init();
+-#endif
+ 
+ 	/* Pass control to the application */
+ 	exit(main(argc, argv, envp));
+diff --git a/src/exit/exit.c b/src/exit/exit.c
+index 163d8f1..b391f33 100644
+--- a/src/exit/exit.c
++++ b/src/exit/exit.c
+@@ -11,24 +11,24 @@ static void dummy()
+ weak_alias(dummy, __funcs_on_exit);
+ weak_alias(dummy, __stdio_exit);
+ 
+-#ifndef SHARED
+-weak_alias(dummy, _fini);
++extern void _fini() __attribute__((weak));
+ extern void (*const __fini_array_start)() __attribute__((weak));
+ extern void (*const __fini_array_end)() __attribute__((weak));
+-#endif
+ 
+-_Noreturn void exit(int code)
++static void libc_exit_fini(void)
+ {
+-	__funcs_on_exit();
+-
+-#ifndef SHARED
+ 	uintptr_t a = (uintptr_t)&__fini_array_end;
+ 	for (; a>(uintptr_t)&__fini_array_start; a-=sizeof(void(*)()))
+ 		(*(void (**)())(a-sizeof(void(*)())))();
+-	_fini();
+-#endif
++	if (_fini) _fini();
++}
+ 
+-	__stdio_exit();
++weak_alias(libc_exit_fini, __libc_exit_fini);
+ 
++_Noreturn void exit(int code)
++{
++	__funcs_on_exit();
++	__libc_exit_fini();
++	__stdio_exit();
+ 	_Exit(code);
+ }
+diff --git a/src/ldso/dynlink.c b/src/ldso/dynlink.c
+index 5fbe2bb..ac755d9 100644
+--- a/src/ldso/dynlink.c
++++ b/src/ldso/dynlink.c
+@@ -1175,7 +1175,7 @@ static void kernel_mapped_dso(struct dso *p)
+ 	p->kernel_mapped = 1;
+ }
+ 
+-static void do_fini()
++void __libc_exit_fini()
+ {
+ 	struct dso *p;
+ 	size_t dyn[DYN_CNT];
+@@ -1659,8 +1659,6 @@ _Noreturn void __dls3(size_t *sp)
+ 	debug.state = 0;
+ 	_dl_debug_state();
+ 
+-	__init_libc(envp, argv[0]);
+-	atexit(do_fini);
+ 	errno = 0;
+ 
+ 	CRTJMP((void *)aux[AT_ENTRY], argv-1);
+-- 
+2.6.2
+
+From d56460c939c94a6c547abe8238f442b8de10bfbd Mon Sep 17 00:00:00 2001
+From: Rich Felker <dalias@aerifal.cx>
+Date: Thu, 12 Nov 2015 15:50:26 -0500
+Subject: [PATCH 30/32] unify static and dynamic linked implementations of
+ thread-local storage
+
+this both allows removal of some of the main remaining uses of the
+SHARED macro and clears one obstacle to static-linked dlopen support,
+which may be added at some point in the future.
+
+specialized single-TLS-module versions of __copy_tls and __reset_tls
+are removed and replaced with code adapted from their dynamic-linked
+versions, capable of operating on a whole chain of TLS modules, and
+use of the dynamic linker's DSO chain (which contains large struct dso
+objects) by these functions is replaced with a new chain of struct
+tls_module objects containing only the information needed for
+implementing TLS. this may also yield some performance benefit
+initializing TLS for a new thread when a large number of modules
+without TLS have been loaded, since since there is no need to walk
+structures for modules without TLS.
+---
+ src/env/__init_tls.c  |  71 ++++++++++++++-----------
+ src/env/__reset_tls.c |  23 ++++-----
+ src/internal/libc.h   |   9 +++-
+ src/ldso/dynlink.c    | 140 +++++++++++++++++++-------------------------------
+ 4 files changed, 111 insertions(+), 132 deletions(-)
+
+diff --git a/src/env/__init_tls.c b/src/env/__init_tls.c
+index 73551e6..0107a54 100644
+--- a/src/env/__init_tls.c
++++ b/src/env/__init_tls.c
+@@ -8,9 +8,6 @@
+ #include "atomic.h"
+ #include "syscall.h"
+ 
+-#ifndef SHARED
+-static
+-#endif
+ int __init_tp(void *p)
+ {
+ 	pthread_t td = p;
+@@ -24,8 +21,6 @@ int __init_tp(void *p)
+ 	return 0;
+ }
+ 
+-#ifndef SHARED
+-
+ static struct builtin_tls {
+ 	char c;
+ 	struct pthread pt;
+@@ -33,33 +28,40 @@ static struct builtin_tls {
+ } builtin_tls[1];
+ #define MIN_TLS_ALIGN offsetof(struct builtin_tls, pt)
+ 
+-struct tls_image {
+-	void *image;
+-	size_t len, size, align;
+-} __static_tls;
+-
+-#define T __static_tls
++static struct tls_module main_tls;
+ 
+ void *__copy_tls(unsigned char *mem)
+ {
+ 	pthread_t td;
+-	if (!T.image) return mem;
+-	void **dtv = (void *)mem;
+-	dtv[0] = (void *)1;
++	struct tls_module *p;
++	size_t i;
++	void **dtv;
++
+ #ifdef TLS_ABOVE_TP
+-	mem += sizeof(void *) * 2;
+-	mem += -((uintptr_t)mem + sizeof(struct pthread)) & (T.align-1);
++	dtv = (void **)(mem + libc.tls_size) - (libc.tls_cnt + 1);
++
++	mem += -((uintptr_t)mem + sizeof(struct pthread)) & (libc.tls_align-1);
+ 	td = (pthread_t)mem;
+ 	mem += sizeof(struct pthread);
++
++	for (i=1, p=libc.tls_head; p; i++, p=p->next) {
++		dtv[i] = mem + p->offset;
++		memcpy(dtv[i], p->image, p->len);
++	}
+ #else
++	dtv = (void **)mem;
++
+ 	mem += libc.tls_size - sizeof(struct pthread);
+-	mem -= (uintptr_t)mem & (T.align-1);
++	mem -= (uintptr_t)mem & (libc.tls_align-1);
+ 	td = (pthread_t)mem;
+-	mem -= T.size;
++
++	for (i=1, p=libc.tls_head; p; i++, p=p->next) {
++		dtv[i] = mem - p->offset;
++		memcpy(dtv[i], p->image, p->len);
++	}
+ #endif
++	dtv[0] = (void *)libc.tls_cnt;
+ 	td->dtv = td->dtv_copy = dtv;
+-	dtv[1] = mem;
+-	memcpy(mem, T.image, T.len);
+ 	return td;
+ }
+ 
+@@ -69,7 +71,7 @@ typedef Elf32_Phdr Phdr;
+ typedef Elf64_Phdr Phdr;
+ #endif
+ 
+-void __init_tls(size_t *aux)
++static void static_init_tls(size_t *aux)
+ {
+ 	unsigned char *p;
+ 	size_t n;
+@@ -86,16 +88,24 @@ void __init_tls(size_t *aux)
+ 	}
+ 
+ 	if (tls_phdr) {
+-		T.image = (void *)(base + tls_phdr->p_vaddr);
+-		T.len = tls_phdr->p_filesz;
+-		T.size = tls_phdr->p_memsz;
+-		T.align = tls_phdr->p_align;
++		main_tls.image = (void *)(base + tls_phdr->p_vaddr);
++		main_tls.len = tls_phdr->p_filesz;
++		main_tls.size = tls_phdr->p_memsz;
++		main_tls.align = tls_phdr->p_align;
++		libc.tls_cnt = 1;
++		libc.tls_head = &main_tls;
+ 	}
+ 
+-	T.size += (-T.size - (uintptr_t)T.image) & (T.align-1);
+-	if (T.align < MIN_TLS_ALIGN) T.align = MIN_TLS_ALIGN;
++	main_tls.size += (-main_tls.size - (uintptr_t)main_tls.image)
++		& (main_tls.align-1);
++	if (main_tls.align < MIN_TLS_ALIGN) main_tls.align = MIN_TLS_ALIGN;
++#ifndef TLS_ABOVE_TP
++	main_tls.offset = main_tls.size;
++#endif
+ 
+-	libc.tls_size = 2*sizeof(void *)+T.size+T.align+sizeof(struct pthread)
++	libc.tls_align = main_tls.align;
++	libc.tls_size = 2*sizeof(void *) + sizeof(struct pthread)
++		+ main_tls.size + main_tls.align
+ 		+ MIN_TLS_ALIGN-1 & -MIN_TLS_ALIGN;
+ 
+ 	if (libc.tls_size > sizeof builtin_tls) {
+@@ -117,6 +127,5 @@ void __init_tls(size_t *aux)
+ 	if (__init_tp(__copy_tls(mem)) < 0)
+ 		a_crash();
+ }
+-#else
+-void __init_tls(size_t *auxv) { }
+-#endif
++
++weak_alias(static_init_tls, __init_tls);
+diff --git a/src/env/__reset_tls.c b/src/env/__reset_tls.c
+index bd61f31..677e57f 100644
+--- a/src/env/__reset_tls.c
++++ b/src/env/__reset_tls.c
+@@ -1,21 +1,16 @@
+-#ifndef SHARED
+-
+ #include <string.h>
+ #include "pthread_impl.h"
+-
+-extern struct tls_image {
+-	void *image;
+-	size_t len, size, align;
+-} __static_tls;
+-
+-#define T __static_tls
++#include "libc.h"
+ 
+ void __reset_tls()
+ {
+-	if (!T.size) return;
+ 	pthread_t self = __pthread_self();
+-	memcpy(self->dtv[1], T.image, T.len);
+-	memset((char *)self->dtv[1]+T.len, 0, T.size-T.len);
++	struct tls_module *p;
++	size_t i, n = (size_t)self->dtv[0];
++	if (n) for (p=libc.tls_head, i=1; i<=n; i++, p=p->next) {
++		if (!self->dtv[i]) continue;
++		memcpy(self->dtv[i], p->image, p->len);
++		memset((char *)self->dtv[i]+p->len, 0,
++			p->size - p->len);
++	}
+ }
+-
+-#endif
+diff --git a/src/internal/libc.h b/src/internal/libc.h
+index 98c7535..5e14518 100644
+--- a/src/internal/libc.h
++++ b/src/internal/libc.h
+@@ -11,13 +11,20 @@ struct __locale_struct {
+ 	const struct __locale_map *volatile cat[6];
+ };
+ 
++struct tls_module {
++	struct tls_module *next;
++	void *image;
++	size_t len, size, align, offset;
++};
++
+ struct __libc {
+ 	int can_do_threads;
+ 	int threaded;
+ 	int secure;
+ 	volatile int threads_minus_1;
+ 	size_t *auxv;
+-	size_t tls_size;
++	struct tls_module *tls_head;
++	size_t tls_size, tls_align, tls_cnt;
+ 	size_t page_size;
+ 	struct __locale_struct global_locale;
+ };
+diff --git a/src/ldso/dynlink.c b/src/ldso/dynlink.c
+index ac755d9..0326baf 100644
+--- a/src/ldso/dynlink.c
++++ b/src/ldso/dynlink.c
+@@ -70,8 +70,8 @@ struct dso {
+ 	char kernel_mapped;
+ 	struct dso **deps, *needed_by;
+ 	char *rpath_orig, *rpath;
+-	void *tls_image;
+-	size_t tls_len, tls_size, tls_align, tls_id, tls_offset;
++	struct tls_module tls;
++	size_t tls_id;
+ 	size_t relro_start, relro_end;
+ 	void **new_dtv;
+ 	unsigned char *new_tls;
+@@ -99,6 +99,7 @@ struct symdef {
+ 
+ int __init_tp(void *);
+ void __init_libc(char **, char *);
++void *__copy_tls(unsigned char *);
+ 
+ const char *__libc_get_version(void);
+ 
+@@ -123,6 +124,7 @@ static int noload;
+ static jmp_buf *rtld_fail;
+ static pthread_rwlock_t lock;
+ static struct debug debug;
++static struct tls_module *tls_tail;
+ static size_t tls_cnt, tls_offset, tls_align = MIN_TLS_ALIGN;
+ static size_t static_tls_cnt;
+ static pthread_mutex_t init_fini_lock = { ._m_type = PTHREAD_MUTEX_RECURSIVE };
+@@ -397,14 +399,14 @@ static void do_relocs(struct dso *dso, size_t *rel, size_t rel_size, size_t stri
+ 			break;
+ #ifdef TLS_ABOVE_TP
+ 		case REL_TPOFF:
+-			*reloc_addr = tls_val + def.dso->tls_offset + TPOFF_K + addend;
++			*reloc_addr = tls_val + def.dso->tls.offset + TPOFF_K + addend;
+ 			break;
+ #else
+ 		case REL_TPOFF:
+-			*reloc_addr = tls_val - def.dso->tls_offset + addend;
++			*reloc_addr = tls_val - def.dso->tls.offset + addend;
+ 			break;
+ 		case REL_TPOFF_NEG:
+-			*reloc_addr = def.dso->tls_offset - tls_val + addend;
++			*reloc_addr = def.dso->tls.offset - tls_val + addend;
+ 			break;
+ #endif
+ 		case REL_TLSDESC:
+@@ -426,10 +428,10 @@ static void do_relocs(struct dso *dso, size_t *rel, size_t rel_size, size_t stri
+ 			} else {
+ 				reloc_addr[0] = (size_t)__tlsdesc_static;
+ #ifdef TLS_ABOVE_TP
+-				reloc_addr[1] = tls_val + def.dso->tls_offset
++				reloc_addr[1] = tls_val + def.dso->tls.offset
+ 					+ TPOFF_K + addend;
+ #else
+-				reloc_addr[1] = tls_val - def.dso->tls_offset
++				reloc_addr[1] = tls_val - def.dso->tls.offset
+ 					+ addend;
+ #endif
+ 			}
+@@ -567,9 +569,9 @@ static void *map_library(int fd, struct dso *dso)
+ 			dyn = ph->p_vaddr;
+ 		} else if (ph->p_type == PT_TLS) {
+ 			tls_image = ph->p_vaddr;
+-			dso->tls_align = ph->p_align;
+-			dso->tls_len = ph->p_filesz;
+-			dso->tls_size = ph->p_memsz;
++			dso->tls.align = ph->p_align;
++			dso->tls.len = ph->p_filesz;
++			dso->tls.size = ph->p_memsz;
+ 		} else if (ph->p_type == PT_GNU_RELRO) {
+ 			dso->relro_start = ph->p_vaddr & -PAGE_SIZE;
+ 			dso->relro_end = (ph->p_vaddr + ph->p_memsz) & -PAGE_SIZE;
+@@ -694,7 +696,7 @@ static void *map_library(int fd, struct dso *dso)
+ done_mapping:
+ 	dso->base = base;
+ 	dso->dynv = laddr(dso, dyn);
+-	if (dso->tls_size) dso->tls_image = laddr(dso, tls_image);
++	if (dso->tls.size) dso->tls.image = laddr(dso, tls_image);
+ 	if (!runtime) reclaim_gaps(dso);
+ 	free(allocated_buf);
+ 	return map;
+@@ -1011,8 +1013,8 @@ static struct dso *load_library(const char *name, struct dso *needed_by)
+ 	 * extended DTV capable of storing an additional slot for
+ 	 * the newly-loaded DSO. */
+ 	alloc_size = sizeof *p + strlen(pathname) + 1;
+-	if (runtime && temp_dso.tls_image) {
+-		size_t per_th = temp_dso.tls_size + temp_dso.tls_align
++	if (runtime && temp_dso.tls.image) {
++		size_t per_th = temp_dso.tls.size + temp_dso.tls.align
+ 			+ sizeof(void *) * (tls_cnt+3);
+ 		n_th = libc.threads_minus_1 + 1;
+ 		if (n_th > SSIZE_MAX / per_th) alloc_size = SIZE_MAX;
+@@ -1033,22 +1035,25 @@ static struct dso *load_library(const char *name, struct dso *needed_by)
+ 	strcpy(p->name, pathname);
+ 	/* Add a shortname only if name arg was not an explicit pathname. */
+ 	if (pathname != name) p->shortname = strrchr(p->name, '/')+1;
+-	if (p->tls_image) {
++	if (p->tls.image) {
+ 		p->tls_id = ++tls_cnt;
+-		tls_align = MAXP2(tls_align, p->tls_align);
++		tls_align = MAXP2(tls_align, p->tls.align);
+ #ifdef TLS_ABOVE_TP
+-		p->tls_offset = tls_offset + ( (tls_align-1) &
+-			-(tls_offset + (uintptr_t)p->tls_image) );
+-		tls_offset += p->tls_size;
++		p->tls.offset = tls_offset + ( (tls_align-1) &
++			-(tls_offset + (uintptr_t)p->tls.image) );
++		tls_offset += p->tls.size;
+ #else
+-		tls_offset += p->tls_size + p->tls_align - 1;
+-		tls_offset -= (tls_offset + (uintptr_t)p->tls_image)
+-			& (p->tls_align-1);
+-		p->tls_offset = tls_offset;
++		tls_offset += p->tls.size + p->tls.align - 1;
++		tls_offset -= (tls_offset + (uintptr_t)p->tls.image)
++			& (p->tls.align-1);
++		p->tls.offset = tls_offset;
+ #endif
+ 		p->new_dtv = (void *)(-sizeof(size_t) &
+ 			(uintptr_t)(p->name+strlen(p->name)+sizeof(size_t)));
+ 		p->new_tls = (void *)(p->new_dtv + n_th*(tls_cnt+1));
++		if (tls_tail) tls_tail->next = &p->tls;
++		else libc.tls_head = &p->tls;
++		tls_tail = &p->tls;
+ 	}
+ 
+ 	tail->next = p;
+@@ -1238,53 +1243,8 @@ static void dl_debug_state(void)
+ 
+ weak_alias(dl_debug_state, _dl_debug_state);
+ 
+-void __reset_tls()
++void __init_tls(size_t *auxv)
+ {
+-	pthread_t self = __pthread_self();
+-	struct dso *p;
+-	for (p=head; p; p=p->next) {
+-		if (!p->tls_id || !self->dtv[p->tls_id]) continue;
+-		memcpy(self->dtv[p->tls_id], p->tls_image, p->tls_len);
+-		memset((char *)self->dtv[p->tls_id]+p->tls_len, 0,
+-			p->tls_size - p->tls_len);
+-		if (p->tls_id == (size_t)self->dtv[0]) break;
+-	}
+-}
+-
+-void *__copy_tls(unsigned char *mem)
+-{
+-	pthread_t td;
+-	struct dso *p;
+-	void **dtv;
+-
+-#ifdef TLS_ABOVE_TP
+-	dtv = (void **)(mem + libc.tls_size) - (tls_cnt + 1);
+-
+-	mem += -((uintptr_t)mem + sizeof(struct pthread)) & (tls_align-1);
+-	td = (pthread_t)mem;
+-	mem += sizeof(struct pthread);
+-
+-	for (p=head; p; p=p->next) {
+-		if (!p->tls_id) continue;
+-		dtv[p->tls_id] = mem + p->tls_offset;
+-		memcpy(dtv[p->tls_id], p->tls_image, p->tls_len);
+-	}
+-#else
+-	dtv = (void **)mem;
+-
+-	mem += libc.tls_size - sizeof(struct pthread);
+-	mem -= (uintptr_t)mem & (tls_align-1);
+-	td = (pthread_t)mem;
+-
+-	for (p=head; p; p=p->next) {
+-		if (!p->tls_id) continue;
+-		dtv[p->tls_id] = mem - p->tls_offset;
+-		memcpy(dtv[p->tls_id], p->tls_image, p->tls_len);
+-	}
+-#endif
+-	dtv[0] = (void *)tls_cnt;
+-	td->dtv = td->dtv_copy = dtv;
+-	return td;
+ }
+ 
+ __attribute__((__visibility__("hidden")))
+@@ -1321,12 +1281,12 @@ void *__tls_get_new(size_t *v)
+ 	unsigned char *mem;
+ 	for (p=head; ; p=p->next) {
+ 		if (!p->tls_id || self->dtv[p->tls_id]) continue;
+-		mem = p->new_tls + (p->tls_size + p->tls_align)
++		mem = p->new_tls + (p->tls.size + p->tls.align)
+ 			* a_fetch_add(&p->new_tls_idx,1);
+-		mem += ((uintptr_t)p->tls_image - (uintptr_t)mem)
+-			& (p->tls_align-1);
++		mem += ((uintptr_t)p->tls.image - (uintptr_t)mem)
++			& (p->tls.align-1);
+ 		self->dtv[p->tls_id] = mem;
+-		memcpy(mem, p->tls_image, p->tls_len);
++		memcpy(mem, p->tls.image, p->tls.len);
+ 		if (p->tls_id == v[0]) break;
+ 	}
+ 	__restore_sigs(&set);
+@@ -1335,6 +1295,8 @@ void *__tls_get_new(size_t *v)
+ 
+ static void update_tls_size()
+ {
++	libc.tls_cnt = tls_cnt;
++	libc.tls_align = tls_align;
+ 	libc.tls_size = ALIGN(
+ 		(1+tls_cnt) * sizeof(void *) +
+ 		tls_offset +
+@@ -1445,6 +1407,7 @@ _Noreturn void __dls3(size_t *sp)
+ 	 * use during dynamic linking. If possible it will also serve as the
+ 	 * thread pointer at runtime. */
+ 	libc.tls_size = sizeof builtin_tls;
++	libc.tls_align = tls_align;
+ 	if (__init_tp(__copy_tls((void *)builtin_tls)) < 0) {
+ 		a_crash();
+ 	}
+@@ -1472,13 +1435,13 @@ _Noreturn void __dls3(size_t *sp)
+ 				interp_off = (size_t)phdr->p_vaddr;
+ 			else if (phdr->p_type == PT_TLS) {
+ 				tls_image = phdr->p_vaddr;
+-				app.tls_len = phdr->p_filesz;
+-				app.tls_size = phdr->p_memsz;
+-				app.tls_align = phdr->p_align;
++				app.tls.len = phdr->p_filesz;
++				app.tls.size = phdr->p_memsz;
++				app.tls.align = phdr->p_align;
+ 			}
+ 		}
+ 		if (DL_FDPIC) app.loadmap = app_loadmap;
+-		if (app.tls_size) app.tls_image = laddr(&app, tls_image);
++		if (app.tls.size) app.tls.image = laddr(&app, tls_image);
+ 		if (interp_off) ldso.name = laddr(&app, interp_off);
+ 		if ((aux[0] & (1UL<<AT_EXECFN))
+ 		    && strncmp((char *)aux[AT_EXECFN], "/proc/", 6))
+@@ -1547,19 +1510,20 @@ _Noreturn void __dls3(size_t *sp)
+ 			dprintf(1, "\t%s (%p)\n", ldso.name, ldso.base);
+ 		}
+ 	}
+-	if (app.tls_size) {
++	if (app.tls.size) {
++		libc.tls_head = &app.tls;
+ 		app.tls_id = tls_cnt = 1;
+ #ifdef TLS_ABOVE_TP
+-		app.tls_offset = 0;
+-		tls_offset = app.tls_size
+-			+ ( -((uintptr_t)app.tls_image + app.tls_size)
+-			& (app.tls_align-1) );
++		app.tls.offset = 0;
++		tls_offset = app.tls.size
++			+ ( -((uintptr_t)app.tls.image + app.tls.size)
++			& (app.tls.align-1) );
+ #else
+-		tls_offset = app.tls_offset = app.tls_size
+-			+ ( -((uintptr_t)app.tls_image + app.tls_size)
+-			& (app.tls_align-1) );
++		tls_offset = app.tls.offset = app.tls.size
++			+ ( -((uintptr_t)app.tls.image + app.tls.size)
++			& (app.tls.align-1) );
+ #endif
+-		tls_align = MAXP2(tls_align, app.tls_align);
++		tls_align = MAXP2(tls_align, app.tls.align);
+ 	}
+ 	app.global = 1;
+ 	decode_dyn(&app);
+@@ -1668,6 +1632,7 @@ _Noreturn void __dls3(size_t *sp)
+ void *dlopen(const char *file, int mode)
+ {
+ 	struct dso *volatile p, *orig_tail, *next;
++	struct tls_module *orig_tls_tail;
+ 	size_t orig_tls_cnt, orig_tls_offset, orig_tls_align;
+ 	size_t i;
+ 	int cs;
+@@ -1680,6 +1645,7 @@ void *dlopen(const char *file, int mode)
+ 	__inhibit_ptc();
+ 
+ 	p = 0;
++	orig_tls_tail = tls_tail;
+ 	orig_tls_cnt = tls_cnt;
+ 	orig_tls_offset = tls_offset;
+ 	orig_tls_align = tls_align;
+@@ -1706,6 +1672,8 @@ void *dlopen(const char *file, int mode)
+ 			unmap_library(p);
+ 			free(p);
+ 		}
++		if (!orig_tls_tail) libc.tls_head = 0;
++		tls_tail = orig_tls_tail;
+ 		tls_cnt = orig_tls_cnt;
+ 		tls_offset = orig_tls_offset;
+ 		tls_align = orig_tls_align;
+@@ -1922,7 +1890,7 @@ int dl_iterate_phdr(int(*callback)(struct dl_phdr_info *info, size_t size, void
+ 		info.dlpi_adds      = gencnt;
+ 		info.dlpi_subs      = 0;
+ 		info.dlpi_tls_modid = current->tls_id;
+-		info.dlpi_tls_data  = current->tls_image;
++		info.dlpi_tls_data  = current->tls.image;
+ 
+ 		ret = (callback)(&info, sizeof (info), data);
+ 
+-- 
+2.6.2
+
