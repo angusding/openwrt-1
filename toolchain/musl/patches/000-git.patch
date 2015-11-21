@@ -1,7 +1,7 @@
 From be76cdcf81bdf60d2b7981d9f7d09593f88ef4e6 Mon Sep 17 00:00:00 2001
 From: Rich Felker <dalias@aerifal.cx>
 Date: Thu, 22 Oct 2015 23:41:35 -0400
-Subject: [PATCH 01/34] fix breakage when user overrides CFLAGS on the make
+Subject: [PATCH 01/33] fix breakage when user overrides CFLAGS on the make
  command line
 
 these per-target CFLAGS adjustments are mandatory additions to the
@@ -53,7 +53,7 @@ index 844a017..b2226fa 100644
 From bc0c48414eaba9e974e54aa8ef611b78037fd387 Mon Sep 17 00:00:00 2001
 From: Rich Felker <dalias@aerifal.cx>
 Date: Fri, 23 Oct 2015 00:01:01 -0400
-Subject: [PATCH 02/34] prevent user CFLAGS overrides from exposing executable
+Subject: [PATCH 02/33] prevent user CFLAGS overrides from exposing executable
  stack
 
 the option to suppress executable stack tagging was placed in CFLAGS,
@@ -106,7 +106,7 @@ index 03c0ebe..742ca26 100755
 From b114190b29417fff6f701eea3a3b3b6030338280 Mon Sep 17 00:00:00 2001
 From: Rich Felker <dalias@aerifal.cx>
 Date: Sat, 24 Oct 2015 22:42:10 -0400
-Subject: [PATCH 03/34] fix single-byte overflow of malloc'd buffer in getdelim
+Subject: [PATCH 03/33] fix single-byte overflow of malloc'd buffer in getdelim
 
 the buffer enlargement logic here accounted for the terminating null
 byte, but not for the possibility of hitting the delimiter in the
@@ -138,7 +138,7 @@ index a88c393..3077490 100644
 From 2683e267fa6c20d2e7a498a85f79a1dfc4301f23 Mon Sep 17 00:00:00 2001
 From: Rich Felker <dalias@aerifal.cx>
 Date: Mon, 26 Oct 2015 18:42:22 -0400
-Subject: [PATCH 04/34] safely handle failure to open hosts, services,
+Subject: [PATCH 04/33] safely handle failure to open hosts, services,
  resolv.conf files
 
 previously, transient failures like fd exhaustion or other
@@ -257,7 +257,7 @@ index 35f106d..d0e8e48 100644
 From 6eada2edb302ff061be8546b23c9cb836621d122 Mon Sep 17 00:00:00 2001
 From: Hauke Mehrtens <hauke@hauke-m.de>
 Date: Mon, 26 Oct 2015 23:03:55 +0100
-Subject: [PATCH 05/34] getnameinfo: make size check not fail for bigger sizes
+Subject: [PATCH 05/33] getnameinfo: make size check not fail for bigger sizes
 
 getnameinfo() compares the size of the given struct sockaddr with
 sizeof(struct sockaddr_in) and sizeof(struct sockaddr_in6) depending on
@@ -302,7 +302,7 @@ index 3484fc6..5e6fae3 100644
 From fead7e3fc04729b4cc8a5feec4a172b389395212 Mon Sep 17 00:00:00 2001
 From: Rich Felker <dalias@aerifal.cx>
 Date: Wed, 28 Oct 2015 21:45:31 -0400
-Subject: [PATCH 06/34] fix missing bss handling in FDPIC ELF loader
+Subject: [PATCH 06/33] fix missing bss handling in FDPIC ELF loader
 
 when a library being loaded has bss (i.e. data segment with
 p_memsz>p_filesz), this region needs to be zeroed with a combination
@@ -343,7 +343,7 @@ index 642ecc3..a6484dd 100644
 From cb1bf2f321b45a06447133b3db00621b7300c456 Mon Sep 17 00:00:00 2001
 From: Rich Felker <dalias@aerifal.cx>
 Date: Mon, 2 Nov 2015 12:39:28 -0500
-Subject: [PATCH 07/34] properly access mcontext_t program counter in
+Subject: [PATCH 07/33] properly access mcontext_t program counter in
  cancellation handler
 
 using the actual mcontext_t definition rather than an overlaid pointer
@@ -508,7 +508,7 @@ index 0151a1a..6eaf72c 100644
 From 36e8b6a28be5d4ffad966386b1e1c0d0dc6ca11a Mon Sep 17 00:00:00 2001
 From: Rich Felker <dalias@aerifal.cx>
 Date: Mon, 2 Nov 2015 16:16:00 -0500
-Subject: [PATCH 08/34] use explicit __cp_cancel label in cancellable syscall
+Subject: [PATCH 08/33] use explicit __cp_cancel label in cancellable syscall
  asm for all archs
 
 previously, only archs that needed to do stack cleanup defined a
@@ -728,7 +728,7 @@ index 1a0fd5d..4f10171 100644
 From f9ecb6bfa1dc9f93a10dad97a158e6b8334c586c Mon Sep 17 00:00:00 2001
 From: Daniel Micay <danielmicay@gmail.com>
 Date: Sat, 31 Oct 2015 05:14:45 -0400
-Subject: [PATCH 09/34] prevent allocs than PTRDIFF_MAX via mremap
+Subject: [PATCH 09/33] prevent allocs than PTRDIFF_MAX via mremap
 
 It's quite feasible for this to happen via MREMAP_MAYMOVE.
 ---
@@ -767,7 +767,7 @@ index 596c45f..1096ace 100644
 From fda365a53074f97f3213caefe70ea13297acecb2 Mon Sep 17 00:00:00 2001
 From: Rich Felker <dalias@aerifal.cx>
 Date: Mon, 2 Nov 2015 16:37:51 -0500
-Subject: [PATCH 10/34] fix mremap memory synchronization and use of variadic
+Subject: [PATCH 10/33] fix mremap memory synchronization and use of variadic
  argument
 
 since mremap with the MREMAP_FIXED flag is an operation that unmaps
@@ -828,7 +828,7 @@ index 1096ace..ce4e8ea 100644
 From 4cd8b4725907651f329e2f96d428c4e3521643f8 Mon Sep 17 00:00:00 2001
 From: Rich Felker <dalias@aerifal.cx>
 Date: Mon, 2 Nov 2015 16:58:14 -0500
-Subject: [PATCH 11/34] keep user-provided CFLAGS/LDFLAGS separate from those
+Subject: [PATCH 11/33] keep user-provided CFLAGS/LDFLAGS separate from those
  added by configure
 
 this way, overriding these variables on the make command line (or just
@@ -905,7 +905,7 @@ index 742ca26..3e536f5 100755
 From 4fcb48275adbe1959852d298425e2da610708975 Mon Sep 17 00:00:00 2001
 From: Rich Felker <dalias@aerifal.cx>
 Date: Mon, 2 Nov 2015 18:11:36 -0500
-Subject: [PATCH 12/34] generalize sh entry point asm not to assume call dests
+Subject: [PATCH 12/33] generalize sh entry point asm not to assume call dests
  fit in 12 bits
 
 this assumption is borderline-unsafe to begin with, and fails badly
@@ -971,7 +971,7 @@ index 948bcb7..f341c8f 100644
 From 2f1d1f1ec538c4fa9b62358cf0d3dba5e646a572 Mon Sep 17 00:00:00 2001
 From: Rich Felker <dalias@aerifal.cx>
 Date: Mon, 2 Nov 2015 21:44:57 -0500
-Subject: [PATCH 13/34] fix mismatched parens in CMPLX def for
+Subject: [PATCH 13/33] fix mismatched parens in CMPLX def for
  annex-g-conforming compilers
 
 this conditional path was never tested because there are no compilers
@@ -999,7 +999,7 @@ index 4d21728..008b3c7 100644
 From 27c1eccf33ce5cb7508ef5e541daa9b6441b4a51 Mon Sep 17 00:00:00 2001
 From: Rich Felker <dalias@aerifal.cx>
 Date: Wed, 4 Nov 2015 13:24:11 -0500
-Subject: [PATCH 14/34] have configure check/add -ffunction-sections and
+Subject: [PATCH 14/33] have configure check/add -ffunction-sections and
  -fdata-sections
 
 based on patch by Denys Vlasenko. the original intent for using these
@@ -1049,7 +1049,7 @@ index 3e536f5..1e5c4b3 100755
 From 2efd38e8c70f00ca6bbc1eb5199aa507d45436cf Mon Sep 17 00:00:00 2001
 From: Rich Felker <dalias@aerifal.cx>
 Date: Wed, 4 Nov 2015 21:39:13 -0500
-Subject: [PATCH 15/34] have configure check/add linker options to reduce size
+Subject: [PATCH 15/33] have configure check/add linker options to reduce size
  lost to padding
 
 based on patch by Denys Vlasenko. sorting sections and common data
@@ -1082,7 +1082,7 @@ index 1e5c4b3..d04c860 100755
 From 6a851e3ab8a1ae524b2aa6218615ec1c86528e9c Mon Sep 17 00:00:00 2001
 From: Rich Felker <dalias@aerifal.cx>
 Date: Wed, 4 Nov 2015 21:40:36 -0500
-Subject: [PATCH 16/34] have configure check/add --gc-sections linker option
+Subject: [PATCH 16/33] have configure check/add --gc-sections linker option
 
 this allowing the linker to drop certain weak definitions that are
 only used as dummies for static linking. they could be eliminated for
@@ -1114,7 +1114,7 @@ index d04c860..dece1d0 100755
 From 918b1c1d177b5e3cf22a8aae4a01776495fdc3bc Mon Sep 17 00:00:00 2001
 From: Rich Felker <dalias@aerifal.cx>
 Date: Wed, 4 Nov 2015 21:41:29 -0500
-Subject: [PATCH 17/34] remove external linkage from __simple_malloc definition
+Subject: [PATCH 17/33] remove external linkage from __simple_malloc definition
 
 this function is used only as a weak definition for malloc, for static
 linking in programs which do not call realloc or free. since it had
@@ -1144,7 +1144,7 @@ index 09ac575..a7e4a9f 100644
 From 8984b5837a10dcdc654ef5b7948c1377ddd80a02 Mon Sep 17 00:00:00 2001
 From: Rich Felker <dalias@libc.org>
 Date: Sun, 18 Oct 2015 20:17:43 -0400
-Subject: [PATCH 18/34] convert arm memcpy asm to UAL, remove .word hacks
+Subject: [PATCH 18/33] convert arm memcpy asm to UAL, remove .word hacks
 
 contrary to commit 9367fe926196f407705bb07cd29c6e40eb1774dd, all
 relevant gas versions actually do support .syntax unified.
@@ -1255,7 +1255,7 @@ index 9c5e38d..5416403 100644
 From 31d73a560b2e14a2030f92f238064e1e98215e50 Mon Sep 17 00:00:00 2001
 From: Szabolcs Nagy <nsz@port70.net>
 Date: Thu, 5 Nov 2015 18:13:11 -0500
-Subject: [PATCH 19/34] use vfp mnemonics instead of p10 coprocessor ones in
+Subject: [PATCH 19/33] use vfp mnemonics instead of p10 coprocessor ones in
  armhf fenv asm
 
 mrc/mcr p10 coprocessor mnemonics are deprecated by some
@@ -1344,7 +1344,7 @@ index c1ffd2e..e447ca1 100644
 From ea1e2c5e18dd0790fb9b2af2bd947f4981736dc2 Mon Sep 17 00:00:00 2001
 From: Rich Felker <dalias@aerifal.cx>
 Date: Sat, 7 Nov 2015 20:23:49 -0500
-Subject: [PATCH 20/34] work around toolchains with broken visibility in
+Subject: [PATCH 20/33] work around toolchains with broken visibility in
  libgcc/libpcc
 
 ---
@@ -1373,7 +1373,7 @@ index dece1d0..ee21771 100755
 From cf40375e8fd14fc02a850af90b145d324d0381b5 Mon Sep 17 00:00:00 2001
 From: Rich Felker <dalias@aerifal.cx>
 Date: Mon, 9 Nov 2015 21:14:07 -0500
-Subject: [PATCH 21/34] use vfp mnemonics rather than hard-coded opcodes in arm
+Subject: [PATCH 21/33] use vfp mnemonics rather than hard-coded opcodes in arm
  setjmp/longjmp
 
 the code to save/restore vfp registers needs to build even when the
@@ -1436,7 +1436,7 @@ index 19f8abc..32db7d8 100644
 From 9f290a49bf9ee247d540d3c83875288a7991699c Mon Sep 17 00:00:00 2001
 From: Rich Felker <dalias@aerifal.cx>
 Date: Mon, 9 Nov 2015 22:36:38 -0500
-Subject: [PATCH 22/34] remove non-working pre-armv4t support from arm asm
+Subject: [PATCH 22/33] remove non-working pre-armv4t support from arm asm
 
 the idea of the three-instruction sequence being removed was to be
 able to return to thumb code when used on armv4t+ from a thumb caller,
@@ -1617,7 +1617,7 @@ index 96ce613..64528b3 100644
 From 4e73d12117e362ad4b82946dc084b4a38f76e54b Mon Sep 17 00:00:00 2001
 From: Rich Felker <dalias@aerifal.cx>
 Date: Tue, 10 Nov 2015 00:01:55 -0500
-Subject: [PATCH 23/34] explicitly assemble all arm asm sources as UAL
+Subject: [PATCH 23/33] explicitly assemble all arm asm sources as UAL
 
 these files are all accepted as legacy arm syntax when producing arm
 code, but legacy syntax cannot be used for producing thumb2 with
@@ -1806,7 +1806,7 @@ index 64528b3..a5730c0 100644
 From a946e8117ed51dd771bd8cac3575fc28a0399a32 Mon Sep 17 00:00:00 2001
 From: Rich Felker <dalias@aerifal.cx>
 Date: Tue, 10 Nov 2015 23:07:17 -0500
-Subject: [PATCH 24/34] fix return value of nl_langinfo for invalid item
+Subject: [PATCH 24/33] fix return value of nl_langinfo for invalid item
  arguments
 
 it was wrongly returning a null pointer instead of an empty string.
@@ -1853,7 +1853,7 @@ index d3c90d9..b2c8569 100644
 From 9439ebd7668182a1c6213ad1a5011bdc71585b5f Mon Sep 17 00:00:00 2001
 From: Rich Felker <dalias@aerifal.cx>
 Date: Wed, 11 Nov 2015 17:34:17 -0500
-Subject: [PATCH 25/34] fix dynamic loader library mapping for nommu systems
+Subject: [PATCH 25/33] fix dynamic loader library mapping for nommu systems
 
 on linux/nommu, non-writable private mappings of files may actually
 use memory shared with other processes or the fs cache. the old nommu
@@ -1957,7 +1957,7 @@ index a6484dd..5fbe2bb 100644
 From dc5bd27ac4eb68e7ec84dff0fd26f2ac55360989 Mon Sep 17 00:00:00 2001
 From: Rich Felker <dalias@aerifal.cx>
 Date: Wed, 11 Nov 2015 18:27:23 -0500
-Subject: [PATCH 26/34] use correct nofpu versions of setjmp/longjmp used on
+Subject: [PATCH 26/33] use correct nofpu versions of setjmp/longjmp used on
  sh-nofpu-fdpic
 
 when adding the fdpic subarchs, the need for these sub files was
@@ -2007,7 +2007,7 @@ index 0000000..a5bb294
 From 8a8fdf6398b85c99dffb237e47fa577e2ddc9e77 Mon Sep 17 00:00:00 2001
 From: Rich Felker <dalias@aerifal.cx>
 Date: Wed, 11 Nov 2015 19:29:45 -0500
-Subject: [PATCH 27/34] eliminate use of SHARED macro to suppress visibility
+Subject: [PATCH 27/33] eliminate use of SHARED macro to suppress visibility
  attributes
 
 this is the first and simplest stage of removal of the SHARED macro,
@@ -2165,7 +2165,7 @@ index c4631f0..a21c386 100644
 From 4aaf879eb08a22c501b43d8604e67614f7dbc55f Mon Sep 17 00:00:00 2001
 From: Rich Felker <dalias@aerifal.cx>
 Date: Wed, 11 Nov 2015 19:43:56 -0500
-Subject: [PATCH 28/34] eliminate use of SHARED macro in __tls_get_addr
+Subject: [PATCH 28/33] eliminate use of SHARED macro in __tls_get_addr
 
 this was only a tiny optimization, and static-linked binaries should
 not be calling __tls_get_addr anyway since the linker is supposed to
@@ -2207,7 +2207,7 @@ index 84a413d..6945faa 100644
 From ad1cd43a86645ba2d4f7c8747240452a349d6bc1 Mon Sep 17 00:00:00 2001
 From: Rich Felker <dalias@aerifal.cx>
 Date: Wed, 11 Nov 2015 22:08:23 -0500
-Subject: [PATCH 29/34] unify static and dynamic libc init/fini code paths
+Subject: [PATCH 29/33] unify static and dynamic libc init/fini code paths
 
 use weak definitions that the dynamic linker can override instead of
 preprocessor conditionals on SHARED so that the same libc start and
@@ -2343,7 +2343,7 @@ index 5fbe2bb..ac755d9 100644
 From d56460c939c94a6c547abe8238f442b8de10bfbd Mon Sep 17 00:00:00 2001
 From: Rich Felker <dalias@aerifal.cx>
 Date: Thu, 12 Nov 2015 15:50:26 -0500
-Subject: [PATCH 30/34] unify static and dynamic linked implementations of
+Subject: [PATCH 30/33] unify static and dynamic linked implementations of
  thread-local storage
 
 this both allows removal of some of the main remaining uses of the
@@ -2864,7 +2864,7 @@ index ac755d9..0326baf 100644
 From 9e0a317d8c699278c9c8e2a829744ea098548416 Mon Sep 17 00:00:00 2001
 From: Rich Felker <dalias@aerifal.cx>
 Date: Thu, 12 Nov 2015 16:13:52 -0500
-Subject: [PATCH 31/34] remove use of SHARED macro in dynamic linker version
+Subject: [PATCH 31/33] remove use of SHARED macro in dynamic linker version
  reporting
 
 also fix visibility of the glue function used.
@@ -2909,7 +2909,7 @@ index 0326baf..2d24c78 100644
 From 5fe38516f7ba0318ab792127bb16621920df3319 Mon Sep 17 00:00:00 2001
 From: Rich Felker <dalias@aerifal.cx>
 Date: Sun, 15 Nov 2015 21:28:41 -0500
-Subject: [PATCH 32/34] use private maps even for read-only segments of FDPIC
+Subject: [PATCH 32/33] use private maps even for read-only segments of FDPIC
  libraries
 
 the nommu kernel shares memory when it can anyway for private
@@ -2942,7 +2942,7 @@ index 2d24c78..6495aee 100644
 From 4f3a92881aa1fd9a3ebebe2c9940d70c95a7b0e6 Mon Sep 17 00:00:00 2001
 From: Rich Felker <dalias@aerifal.cx>
 Date: Wed, 18 Nov 2015 19:00:44 -0500
-Subject: [PATCH 33/34] fix build regression from removal of #ifdef SHARED
+Subject: [PATCH 33/33] fix build regression from removal of #ifdef SHARED
 
 ---
  Makefile | 2 +-
@@ -2961,147 +2961,6 @@ index 2b21015..df20f94 100644
  
  crt/rcrt1.o src/ldso/dlstart.lo src/ldso/dynlink.lo: src/internal/dynlink.h arch/$(ARCH)/reloc.h
  
--- 
-2.6.2
-
-From 19caa25d0a8e587bb89b79c3f629085548709dd4 Mon Sep 17 00:00:00 2001
-From: Rich Felker <dalias@aerifal.cx>
-Date: Thu, 19 Nov 2015 20:28:08 -0500
-Subject: [PATCH 34/34] remove undef weak refs to init/fini array symbols in
- libc.so
-
-commit ad1cd43a86645ba2d4f7c8747240452a349d6bc1 eliminated
-preprocessor-level omission of references to the init/fini array
-symbols from object files going into libc.so. the references are weak,
-and the intent was that the linker would resolve them to zero in
-libc.so, but instead it leaves undefined references that could be
-satisfied at runtime. normally these references would be harmless,
-since the code using them does not even get executed, but some older
-binutils versions produce a linking error: when linking a program
-against libc.so, ld first tries to use the hidden init/fini array
-symbols produced by the linker script to satisfy the references in
-libc.so, then produces an error because the definitions are hidden.
-
-ideally ld would have already provided definitions of these symbols
-when linking libc.so, but the linker script for -shared omits them.
-
-to avoid this situation, the dynamic linker now provides its own dummy
-definitions of the init/fini array symbols for libc.so. since they are
-hidden, everything binds at ld time and no references remain in the
-dynamic symbol table. with modern binutils and --gc-sections, both
-the dummy empty array objects and the code referencing them get
-dropped at link time, anyway.
-
-the _init and _fini symbols are also switched back to using weak
-definitions rather than weak references since the latter behave
-somewhat problematically in general, and the weak definition approach
-was known to work well.
----
- src/env/__libc_start_main.c | 10 ++++++----
- src/exit/exit.c             |  8 ++++----
- src/internal/vis.h          |  7 +------
- src/ldso/dynlink.c          |  9 +++++++++
- 4 files changed, 20 insertions(+), 14 deletions(-)
-
-diff --git a/src/env/__libc_start_main.c b/src/env/__libc_start_main.c
-index 7ffada0..5c79be2 100644
---- a/src/env/__libc_start_main.c
-+++ b/src/env/__libc_start_main.c
-@@ -8,9 +8,11 @@
- 
- void __init_tls(size_t *);
- 
--extern void _init() __attribute__((weak));
--extern void (*const __init_array_start)() __attribute__((weak));
--extern void (*const __init_array_end)() __attribute__((weak));
-+static void dummy(void) {}
-+weak_alias(dummy, _init);
-+
-+__attribute__((__weak__, __visibility__("hidden")))
-+extern void (*const __init_array_start)(void), (*const __init_array_end)(void);
- 
- static void dummy1(void *p) {}
- weak_alias(dummy1, __init_ssp);
-@@ -53,7 +55,7 @@ void __init_libc(char **envp, char *pn)
- 
- static void libc_start_init(void)
- {
--	if (_init) _init();
-+	_init();
- 	uintptr_t a = (uintptr_t)&__init_array_start;
- 	for (; a<(uintptr_t)&__init_array_end; a+=sizeof(void(*)()))
- 		(*(void (**)())a)();
-diff --git a/src/exit/exit.c b/src/exit/exit.c
-index b391f33..bf7835a 100644
---- a/src/exit/exit.c
-+++ b/src/exit/exit.c
-@@ -10,17 +10,17 @@ static void dummy()
-  * as a consequence of linking either __toread.c or __towrite.c. */
- weak_alias(dummy, __funcs_on_exit);
- weak_alias(dummy, __stdio_exit);
-+weak_alias(dummy, _fini);
- 
--extern void _fini() __attribute__((weak));
--extern void (*const __fini_array_start)() __attribute__((weak));
--extern void (*const __fini_array_end)() __attribute__((weak));
-+__attribute__((__weak__, __visibility__("hidden")))
-+extern void (*const __fini_array_start)(void), (*const __fini_array_end)(void);
- 
- static void libc_exit_fini(void)
- {
- 	uintptr_t a = (uintptr_t)&__fini_array_end;
- 	for (; a>(uintptr_t)&__fini_array_start; a-=sizeof(void(*)()))
- 		(*(void (**)())(a-sizeof(void(*)())))();
--	if (_fini) _fini();
-+	_fini();
- }
- 
- weak_alias(libc_exit_fini, __libc_exit_fini);
-diff --git a/src/internal/vis.h b/src/internal/vis.h
-index 02bfbda..8414179 100644
---- a/src/internal/vis.h
-+++ b/src/internal/vis.h
-@@ -8,8 +8,7 @@
- 
- /* Conceptually, all symbols should be protected, but some toolchains
-  * fail to support copy relocations for protected data, so exclude all
-- * exported data symbols. Also omit visibility for possibly-undefined
-- * weak references. */
-+ * exported data symbols. */
- 
- __attribute__((__visibility__("default")))
- extern struct _IO_FILE *const stdin, *const stdout, *const stderr;
-@@ -23,10 +22,6 @@ extern long timezone, __timezone;
- __attribute__((__visibility__("default")))
- extern char *optarg, **environ, **__environ, *tzname[2], *__tzname[2], *__progname, *__progname_full;
- 
--__attribute__((__visibility__("default")))
--extern void (*const __init_array_start)(), (*const __init_array_end)(),
--	(*const __fini_array_start)(), (*const __fini_array_end)();
--
- #pragma GCC visibility push(protected)
- 
- #endif
-diff --git a/src/ldso/dynlink.c b/src/ldso/dynlink.c
-index 6495aee..4648e9a 100644
---- a/src/ldso/dynlink.c
-+++ b/src/ldso/dynlink.c
-@@ -134,6 +134,15 @@ static struct fdpic_dummy_loadmap app_dummy_loadmap;
- 
- struct debug *_dl_debug_addr = &debug;
- 
-+__attribute__((__visibility__("hidden")))
-+void (*const __init_array_start)(void)=0, (*const __fini_array_start)(void)=0;
-+
-+__attribute__((__visibility__("hidden")))
-+extern void (*const __init_array_end)(void), (*const __fini_array_end)(void);
-+
-+weak_alias(__init_array_start, __init_array_end);
-+weak_alias(__fini_array_start, __fini_array_end);
-+
- static int dl_strcmp(const char *l, const char *r)
- {
- 	for (; *l==*r && *l; l++, r++);
 -- 
 2.6.2
 
