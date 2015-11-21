@@ -288,9 +288,9 @@ CONFIG_BINUTILS_VERSION_2_25_1=y
 CONFIG_BINUTILS_VERSION="2.25.1"
 CONFIG_GCC_VERSION="5.2.0"
 CONFIG_GCC_VERSION_5=y
-CONFIG_MUSL_VERSION="1.1.11"
+CONFIG_MUSL_VERSION="1.1.12"
 CONFIG_LIBC="musl"
-CONFIG_LIBC_VERSION="1.1.11"
+CONFIG_LIBC_VERSION="1.1.12"
 CONFIG_TARGET_SUFFIX="muslgnueabi"
 # CONFIG_IB is not set
 # CONFIG_SDK is not set
@@ -1377,6 +1377,7 @@ CONFIG_PACKAGE_kmod-ata-marvell-sata=y
 # CONFIG_PACKAGE_kmod-scsi-cdrom is not set
 CONFIG_PACKAGE_kmod-scsi-core=y
 # CONFIG_PACKAGE_kmod-scsi-generic is not set
+# CONFIG_PACKAGE_kmod-scsi-tape is not set
 
 #
 # CAN Support
@@ -1433,7 +1434,7 @@ CONFIG_PACKAGE_kmod-crypto-hash=y
 # Filesystems
 #
 # CONFIG_PACKAGE_kmod-fs-afs is not set
-CONFIG_PACKAGE_kmod-fs-autofs4=y
+# CONFIG_PACKAGE_kmod-fs-autofs4 is not set
 CONFIG_PACKAGE_kmod-fs-btrfs=y
 # CONFIG_PACKAGE_kmod-fs-cifs is not set
 # CONFIG_PACKAGE_kmod-fs-configfs is not set
@@ -1560,7 +1561,8 @@ CONFIG_PACKAGE_kmod-nls-base=y
 # CONFIG_PACKAGE_kmod-nls-cp862 is not set
 # CONFIG_PACKAGE_kmod-nls-cp864 is not set
 # CONFIG_PACKAGE_kmod-nls-cp866 is not set
-# CONFIG_PACKAGE_kmod-nls-cp932 is not set
+CONFIG_PACKAGE_kmod-nls-cp932=y
+CONFIG_PACKAGE_kmod-nls-cp936=y
 # CONFIG_PACKAGE_kmod-nls-iso8859-1 is not set
 # CONFIG_PACKAGE_kmod-nls-iso8859-13 is not set
 # CONFIG_PACKAGE_kmod-nls-iso8859-15 is not set
@@ -1568,7 +1570,7 @@ CONFIG_PACKAGE_kmod-nls-base=y
 # CONFIG_PACKAGE_kmod-nls-iso8859-6 is not set
 # CONFIG_PACKAGE_kmod-nls-iso8859-8 is not set
 # CONFIG_PACKAGE_kmod-nls-koi8r is not set
-# CONFIG_PACKAGE_kmod-nls-utf8 is not set
+CONFIG_PACKAGE_kmod-nls-utf8=y
 
 #
 # Netfilter Extensions
@@ -1578,7 +1580,6 @@ CONFIG_PACKAGE_kmod-nls-base=y
 CONFIG_PACKAGE_kmod-ip6tables=y
 # CONFIG_PACKAGE_kmod-ip6tables-extra is not set
 # CONFIG_PACKAGE_kmod-ipt-account is not set
-# CONFIG_PACKAGE_kmod-ipt-bandwidth is not set
 # CONFIG_PACKAGE_kmod-ipt-chaos is not set
 # CONFIG_PACKAGE_kmod-ipt-cluster is not set
 # CONFIG_PACKAGE_kmod-ipt-clusterip is not set
@@ -1597,7 +1598,6 @@ CONFIG_PACKAGE_kmod-ipt-filter=y
 # CONFIG_PACKAGE_kmod-ipt-geoip is not set
 # CONFIG_PACKAGE_kmod-ipt-hashlimit is not set
 # CONFIG_PACKAGE_kmod-ipt-iface is not set
-# CONFIG_PACKAGE_kmod-ipt-imq is not set
 # CONFIG_PACKAGE_kmod-ipt-ipmark is not set
 CONFIG_PACKAGE_kmod-ipt-ipopt=y
 # CONFIG_PACKAGE_kmod-ipt-ipp2p is not set
@@ -1621,12 +1621,9 @@ CONFIG_PACKAGE_kmod-ipt-nat-extra=y
 # CONFIG_PACKAGE_kmod-ipt-sysrq is not set
 # CONFIG_PACKAGE_kmod-ipt-tarpit is not set
 # CONFIG_PACKAGE_kmod-ipt-tee is not set
-# CONFIG_PACKAGE_kmod-ipt-timerange is not set
 CONFIG_PACKAGE_kmod-ipt-tproxy=y
 # CONFIG_PACKAGE_kmod-ipt-u32 is not set
 # CONFIG_PACKAGE_kmod-ipt-ulog is not set
-# CONFIG_PACKAGE_kmod-ipt-webmon is not set
-# CONFIG_PACKAGE_kmod-ipt-weburl is not set
 CONFIG_PACKAGE_kmod-nf-conntrack=y
 # CONFIG_PACKAGE_kmod-nf-conntrack-netlink is not set
 CONFIG_PACKAGE_kmod-nf-conntrack6=y
@@ -1946,7 +1943,6 @@ CONFIG_PACKAGE_kmod-mwlwifi=y
 # CONFIG_PACKAGE_kmod-rtl8192de is not set
 # CONFIG_PACKAGE_kmod-rtl8192se is not set
 # CONFIG_PACKAGE_kmod-zd1211rw is not set
-# CONFIG_PACKAGE_kmod-scsi-tape is not set
 
 #
 # Languages
@@ -2042,6 +2038,7 @@ CONFIG_PACKAGE_lua=y
 # CONFIG_PACKAGE_micropython-lib is not set
 # CONFIG_PACKAGE_python is not set
 # CONFIG_PACKAGE_python-base is not set
+# CONFIG_PACKAGE_python-cffi is not set
 # CONFIG_PACKAGE_python-codecs is not set
 # CONFIG_PACKAGE_python-compiler is not set
 # CONFIG_PACKAGE_python-crcmod is not set
@@ -2053,8 +2050,11 @@ CONFIG_PACKAGE_lua=y
 # CONFIG_PACKAGE_python-dns is not set
 # CONFIG_PACKAGE_python-egenix-mx-base is not set
 # CONFIG_PACKAGE_python-email is not set
+# CONFIG_PACKAGE_python-enum34 is not set
 # CONFIG_PACKAGE_python-gdbm is not set
+# CONFIG_PACKAGE_python-idna is not set
 # CONFIG_PACKAGE_python-imglib is not set
+# CONFIG_PACKAGE_python-ipaddress is not set
 # CONFIG_PACKAGE_python-ldap is not set
 # CONFIG_PACKAGE_python-light is not set
 # CONFIG_PACKAGE_python-logging is not set
@@ -2063,10 +2063,14 @@ CONFIG_PACKAGE_lua=y
 # CONFIG_PACKAGE_python-ncurses is not set
 # CONFIG_PACKAGE_python-openssl is not set
 # CONFIG_PACKAGE_python-pip is not set
+# CONFIG_PACKAGE_python-ply is not set
 # CONFIG_PACKAGE_python-psycopg2 is not set
+# CONFIG_PACKAGE_python-pyasn1 is not set
+# CONFIG_PACKAGE_python-pycparser is not set
 # CONFIG_PACKAGE_python-pydoc is not set
 # CONFIG_PACKAGE_python-pyserial is not set
 # CONFIG_PACKAGE_python-setuptools is not set
+# CONFIG_PACKAGE_python-six is not set
 # CONFIG_PACKAGE_python-smbus is not set
 # CONFIG_PACKAGE_python-sqlite3 is not set
 # CONFIG_PACKAGE_python-unittest is not set
@@ -2094,11 +2098,17 @@ CONFIG_PACKAGE_lua=y
 # CONFIG_PACKAGE_python3-unittest is not set
 # CONFIG_PACKAGE_python3-xml is not set
 # CONFIG_PACKAGE_simplejson is not set
+# CONFIG_PACKAGE_zope-interface is not set
 
 #
 # Ruby
 #
 # CONFIG_PACKAGE_ruby is not set
+
+#
+# Tcl
+#
+# CONFIG_PACKAGE_tcl is not set
 # CONFIG_PACKAGE_vala is not set
 
 #
@@ -2404,13 +2414,12 @@ CONFIG_LIBCURL_PROXY=y
 CONFIG_PACKAGE_libdb47=y
 # CONFIG_PACKAGE_libdb47xx is not set
 # CONFIG_PACKAGE_libdbi is not set
+# CONFIG_PACKAGE_libdbus is not set
 # CONFIG_PACKAGE_libdevmapper is not set
 # CONFIG_PACKAGE_libdmapsharing is not set
 # CONFIG_PACKAGE_libdnet is not set
 # CONFIG_PACKAGE_libdrpc is not set
 # CONFIG_PACKAGE_libelf1 is not set
-# CONFIG_PACKAGE_libdbus is not set
-CONFIG_PACKAGE_libericstools=y
 # CONFIG_PACKAGE_libesmtp is not set
 # CONFIG_PACKAGE_libestr is not set
 CONFIG_PACKAGE_libev=y
@@ -3093,7 +3102,6 @@ CONFIG_PACKAGE_ip6tables=y
 # CONFIG_PACKAGE_ip6tables-mod-nat is not set
 CONFIG_PACKAGE_iptables=y
 # CONFIG_PACKAGE_iptables-mod-account is not set
-# CONFIG_PACKAGE_iptables-mod-bandwidth is not set
 # CONFIG_PACKAGE_iptables-mod-chaos is not set
 # CONFIG_PACKAGE_iptables-mod-cluster is not set
 # CONFIG_PACKAGE_iptables-mod-clusterip is not set
@@ -3108,7 +3116,6 @@ CONFIG_PACKAGE_iptables-mod-filter=y
 # CONFIG_PACKAGE_iptables-mod-geoip is not set
 # CONFIG_PACKAGE_iptables-mod-hashlimit is not set
 # CONFIG_PACKAGE_iptables-mod-iface is not set
-# CONFIG_PACKAGE_iptables-mod-imq is not set
 # CONFIG_PACKAGE_iptables-mod-ipmark is not set
 CONFIG_PACKAGE_iptables-mod-ipopt=y
 # CONFIG_PACKAGE_iptables-mod-ipp2p is not set
@@ -3128,12 +3135,9 @@ CONFIG_PACKAGE_iptables-mod-nat-extra=y
 # CONFIG_PACKAGE_iptables-mod-sysrq is not set
 # CONFIG_PACKAGE_iptables-mod-tarpit is not set
 # CONFIG_PACKAGE_iptables-mod-tee is not set
-# CONFIG_PACKAGE_iptables-mod-timerange is not set
 CONFIG_PACKAGE_iptables-mod-tproxy=y
 # CONFIG_PACKAGE_iptables-mod-u32 is not set
 # CONFIG_PACKAGE_iptables-mod-ulog is not set
-# CONFIG_PACKAGE_iptables-mod-webmon is not set
-# CONFIG_PACKAGE_iptables-mod-weburl is not set
 # CONFIG_PACKAGE_iptaccount is not set
 # CONFIG_PACKAGE_l7-protocols is not set
 # CONFIG_PACKAGE_miniupnpc is not set
@@ -3434,6 +3438,7 @@ CONFIG_PACKAGE_ip=y
 # CONFIG_PACKAGE_strongswan-charon is not set
 # CONFIG_PACKAGE_strongswan-default is not set
 # CONFIG_PACKAGE_strongswan-full is not set
+# CONFIG_PACKAGE_strongswan-isakmp is not set
 # CONFIG_PACKAGE_strongswan-libtls is not set
 # CONFIG_PACKAGE_strongswan-minimal is not set
 # CONFIG_PACKAGE_strongswan-mod-addrblock is not set
@@ -3463,6 +3468,7 @@ CONFIG_PACKAGE_ip=y
 # CONFIG_PACKAGE_strongswan-mod-gcm is not set
 # CONFIG_PACKAGE_strongswan-mod-gcrypt is not set
 # CONFIG_PACKAGE_strongswan-mod-gmp is not set
+# CONFIG_PACKAGE_strongswan-mod-gmpdh is not set
 # CONFIG_PACKAGE_strongswan-mod-ha is not set
 # CONFIG_PACKAGE_strongswan-mod-hmac is not set
 # CONFIG_PACKAGE_strongswan-mod-kernel-libipsec is not set
@@ -3520,11 +3526,6 @@ CONFIG_PACKAGE_ip=y
 #
 # CONFIG_PACKAGE_fossil is not set
 # CONFIG_PACKAGE_git is not set
-
-#
-# Web
-#
-# CONFIG_PACKAGE_webmon-gargoyle is not set
 
 #
 # Web Servers/Proxies
@@ -3596,7 +3597,6 @@ CONFIG_PACKAGE_DNSPing_advancedoptions=y
 # CONFIG_PACKAGE_etherwake is not set
 # CONFIG_PACKAGE_ethtool is not set
 # CONFIG_PACKAGE_fakeidentd is not set
-# CONFIG_PACKAGE_gargoyle-firewall-util is not set
 # CONFIG_PACKAGE_gnunet is not set
 # CONFIG_PACKAGE_gpsd is not set
 # CONFIG_PACKAGE_gpsd-clients is not set
@@ -3637,7 +3637,6 @@ CONFIG_PACKAGE_iw=y
 # CONFIG_PACKAGE_krb5-client is not set
 # CONFIG_PACKAGE_krb5-libs is not set
 # CONFIG_PACKAGE_krb5-server is not set
-# CONFIG_PACKAGE_libiptbwctl is not set
 # CONFIG_PACKAGE_linknx is not set
 # CONFIG_PACKAGE_lispd is not set
 # CONFIG_PACKAGE_mac-telnet-client is not set
@@ -3692,7 +3691,6 @@ CONFIG_PACKAGE_ppp-mod-pppoe=y
 # CONFIG_PACKAGE_pppdump is not set
 # CONFIG_PACKAGE_pppossh is not set
 # CONFIG_PACKAGE_pppstats is not set
-# CONFIG_PACKAGE_qos-gargoyle is not set
 # CONFIG_PACKAGE_radsecproxy is not set
 # CONFIG_PACKAGE_redsocks is not set
 # CONFIG_PACKAGE_redsocks2 is not set
@@ -3937,6 +3935,7 @@ CONFIG_PACKAGE_hdparm=y
 # CONFIG_PACKAGE_alsa-utils is not set
 # CONFIG_PACKAGE_alsa-utils-seq is not set
 # CONFIG_PACKAGE_alsa-utils-tests is not set
+# CONFIG_PACKAGE_at is not set
 # CONFIG_PACKAGE_avrdude is not set
 # CONFIG_PACKAGE_bandwidthd is not set
 # CONFIG_PACKAGE_bandwidthd-pgsql is not set
