@@ -123,7 +123,7 @@ tplink_board_detect() {
 	"3C0002"*)
 		model="MINIBOX_V1"
 		;;
-	"070300"*)
+	"070301"*)
 		model="TP-Link TL-WR703N"
 		;;
 	"071000"*)
@@ -456,6 +456,9 @@ ar71xx_board_detect() {
 		;;
 	*"DIR-835 rev. A1")
 		name="dir-835-a1"
+		;;
+	*"dLAN Hotspot")
+		name="dlan-hotspot"
 		;;
 	*"dLAN pro 500 Wireless+")
 		name="dlan-pro-500-wp"
