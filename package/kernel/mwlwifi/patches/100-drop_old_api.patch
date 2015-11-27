@@ -42,6 +42,19 @@
  
  	hw->wiphy->flags |= WIPHY_FLAG_IBSS_RSN;
  
+--- a/dev.h
++++ b/dev.h
+@@ -484,10 +484,6 @@ static inline struct mwl_sta *mwl_dev_ge
+ 	return (struct mwl_sta *)&sta->drv_priv;
+ }
+ 
+-#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 14, 0)
+-#define ether_addr_copy(dst, src) memcpy(dst, src, ETH_ALEN)
+-#endif
+-
+ /* Defined in mac80211.c. */
+ extern const struct ieee80211_ops mwl_mac80211_ops;
+ 
 --- a/mac80211.c
 +++ b/mac80211.c
 @@ -572,19 +572,11 @@ static int mwl_mac80211_get_survey(struc
@@ -64,3 +77,16 @@
  {
  	int rc = 0;
  	struct mwl_priv *priv = hw->priv;
+--- a/rx.c
++++ b/rx.c
+@@ -232,10 +232,8 @@ static inline void mwl_rx_prepare_status
+ 		status->flag |= RX_FLAG_VHT;
+ 		if (bw == RX_RATE_INFO_HT40)
+ 			status->flag |= RX_FLAG_40MHZ;
+-#if LINUX_VERSION_CODE > KERNEL_VERSION(3, 18, 0)
+ 		if (bw == RX_RATE_INFO_HT80)
+ 			status->vht_flag |= RX_VHT_FLAG_80MHZ;
+-#endif
+ 		if (gi == RX_RATE_INFO_SHORT_INTERVAL)
+ 			status->flag |= RX_FLAG_SHORT_GI;
+ 		status->vht_nss = (nss + 1);
