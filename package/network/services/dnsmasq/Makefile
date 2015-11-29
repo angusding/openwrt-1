@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=dnsmasq
 PKG_VERSION:=2.75
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.xz
 PKG_SOURCE_URL:=http://thekelleys.org.uk/dnsmasq
@@ -106,6 +106,12 @@ COPTS = $(if $(CONFIG_IPV6),,-DNO_IPV6)
 
 ifeq ($(BUILD_VARIANT),nodhcpv6)
 	COPTS += -DNO_DHCP6
+endif
+
+# Some tweaks for Mamba
+ifneq ($(CONFIG_TARGET_mvebu_Mamba),)
+	# Disable internal RTC for Linksys WRT1900ac v1(Mamba)
+	COPTS += -DHAVE_BROKEN_RTC
 endif
 
 ifeq ($(BUILD_VARIANT),full)
