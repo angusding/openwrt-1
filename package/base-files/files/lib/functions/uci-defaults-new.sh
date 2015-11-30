@@ -38,6 +38,18 @@ _ucidef_set_interface() {
 	json_select ..
 }
 
+ucidef_set_board_id() {
+	json_select_object model
+	json_add_string id "$1"
+	json_select ..
+}
+
+ucidef_set_model_name() {
+	json_select_object model
+	json_add_string name "$1"
+	json_select ..
+}
+
 ucidef_set_interface_loopback()
 {
 	# stub
@@ -48,7 +60,7 @@ ucidef_set_interface_lan() {
 	local lan_if="$1"
 
 	json_select_object network
-	_ucidef_set_interface lan $lan_if
+	_ucidef_set_interface lan "$lan_if"
 	json_select ..
 }
 
@@ -56,7 +68,7 @@ ucidef_set_interface_wan() {
         local wan_if="$1"
 
         json_select_object network
-        _ucidef_set_interface wan $wan_if
+        _ucidef_set_interface wan "$wan_if"
         json_select ..
 }
 
@@ -65,8 +77,8 @@ ucidef_set_interfaces_lan_wan() {
 	local wan_if="$2"
 
 	json_select_object network
-	_ucidef_set_interface lan $lan_if
-	_ucidef_set_interface wan $wan_if
+	_ucidef_set_interface lan "$lan_if"
+	_ucidef_set_interface wan "$wan_if"
 	json_select ..
 }
 
@@ -186,7 +198,7 @@ ucidef_add_switch_vlan() {
 	local ports="$3"
 	local cpu_port=''
 
-	case $vlan in
+	case "$vlan" in
 	1)	vlan=lan;;
 	2)	vlan=wan;;
 	*)	vlan=vlan$vlan;;
