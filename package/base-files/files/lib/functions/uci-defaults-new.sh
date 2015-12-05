@@ -540,9 +540,34 @@ ucidef_set_rssimon() {
 
 }
 
+ucidef_add_gpio_switch() {
+	local cfg="$1"
+	local name="$2"
+	local pin="$3"
+	local default="${4:-0}"
+
+	json_select_object gpioswitch
+		json_select_object "$cfg"
+			json_add_string name "$name"
+			json_add_int pin "$pin"
+			json_add_int default "$default"
+		json_select ..
+	json_select ..
+}
+
 board_config_update() {
 	json_init
 	[ -f ${CFG} ] && json_load "$(cat ${CFG})"
+
+	# auto-initialize model id and name if applicable
+	if ! json_is_a model object; then
+		json_select_object model
+			[ -f "/tmp/sysinfo/board_name" ] && \
+				json_add_string id "$(cat /tmp/sysinfo/board_name)"
+			[ -f "/tmp/sysinfo/model" ] && \
+				json_add_string name "$(cat /tmp/sysinfo/model)"
+		json_select ..
+	fi
 }
 
 board_config_flush() {
