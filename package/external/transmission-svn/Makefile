@@ -9,7 +9,7 @@ include $(TOPDIR)/rules.mk
 
 PKG_BRANCH:=trunk
 PKG_SOURCE_URL:=svn://svn.transmissionbt.com/Transmission/trunk
-PKG_REV:=14603
+PKG_REV:=14615
 
 PKG_NAME:=transmission-svn
 PKG_VERSION:=2.90
