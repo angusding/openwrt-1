@@ -29,7 +29,7 @@
 #include "dev-wmac.h"
 #include "machtypes.h"
 /* TODO:
- * How to initial AR9381 via pci, WLAN led mostly drives by wmac.
+ * How to initial AR9381 via pci, WLAN led mostly driven by wmac.
  * Unknown external PA and LNA GPIO, maybe we can refer to Qihoo C301, already disabled JTAG.
  * Turbo button and led need driver.
  */
@@ -78,11 +78,11 @@ static struct gpio_led wr2041n_leds_gpio[] __initdata = {
 		.gpio		= WR2041N_GPIO_LED_SYSTEM,
 		.active_low	= 1,
 	},
-	{
-		.name		= "tp-link:green:wlan",
-		.gpio		= WR2041N_GPIO_WMAC_LED_WLAN,
-		.active_low	= 1,
-	},
+//	{
+//		.name		= "tp-link:green:wlan",
+//		.gpio		= WR2041N_GPIO_WMAC_LED_WLAN,
+//		.active_low	= 1,
+//	},
 };
 
 static struct gpio_keys_button wr2041n_gpio_keys[] __initdata = {
@@ -128,15 +128,9 @@ static void __init wr2041n_setup(void)
 	ath79_register_wmac(art + WR2041N_WMAC_CALDATA_OFFSET, tmpmac);
 
 	ath79_init_mac(tmpmac, mac, 1);
-	// try setup wlan led pin
-	//ap9x_pci_setup_wmac_led_pin(0, 0);
-	ap9x_pci_setup_wmac_led_pin(0, WR2041N_GPIO_WMAC_LED_WLAN);
-/* important functions related to wmac leds:
- * void ap9x_pci_setup_wmac_led_pin(unsigned wmac, int pin); ... define wmac led pin, unknown for now
- * void ap9x_pci_setup_wmac_gpio(unsigned wmac, u32 mask, u32 val);
- * void ap9x_pci_setup_wmac_leds(unsigned wmac, struct gpio_led *leds, int num_leds);.. define multi wmac leds
- * 
- */
+	// try to setup wlan led pin
+	ath79_wmac_set_led_pin(WR2041N_GPIO_WMAC_LED_WLAN);
+
 	ap91_pci_init(art + WR2041N_PCIE_CALDATA_OFFSET, tmpmac);
 	ath79_setup_ar934x_eth_cfg(AR934X_ETH_CFG_SW_ONLY_MODE);
 
