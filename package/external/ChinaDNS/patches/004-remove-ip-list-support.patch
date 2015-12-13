@@ -102,7 +102,12 @@
        if (test_ip_in_list(*(struct in_addr *)rd, &chnroute_list)) {
          // result is chn
          if (dns_is_foreign) {
-@@ -938,7 +880,6 @@ usage: chinadns [-h] [-l IPLIST_FILE] [-
+@@ -934,11 +876,10 @@ static void free_delay(int pos) {
+ 
+ static void usage() {
+   printf("%s\n", "\
+-usage: chinadns [-h] [-l IPLIST_FILE] [-b BIND_ADDR] [-p BIND_PORT]\n\
++usage: chinadns [-h] [-b BIND_ADDR] [-p BIND_PORT]\n\
         [-c CHNROUTE_FILE] [-s DNS] [-m] [-v] [-V]\n\
  Forward DNS requests.\n\
  \n\
@@ -110,3 +115,12 @@
    -c CHNROUTE_FILE      path to china route file\n\
                          if not specified, CHNRoute will be turned\n\
    -d                    off enable bi-directional CHNRoute filter\n\
+@@ -948,7 +889,7 @@ Forward DNS requests.\n\
+   -s DNS                DNS servers to use, default:\n\
+                         114.114.114.114,208.67.222.222:443,8.8.8.8\n\
+   -m                    use DNS compression pointer mutation\n\
+-                        (backlist and delaying would be disabled)\n\
++                        (blacklist and delaying would be disabled)\n\
+   -v                    verbose logging\n\
+   -h                    show this help message and exit\n\
+   -V                    print version and exit\n\
