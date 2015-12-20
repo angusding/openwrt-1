@@ -9,8 +9,8 @@ include $(TOPDIR)/rules.mk
 
 PKG_NAME:=shadowsocks-libev
 PKG_VERSION:=2.4.2
-PKG_RELEASE:=3
-PKG_REV:=596f03665b1b07557cf22ac10459375bf8f9a90b
+PKG_RELEASE:=4
+PKG_REV:=52ff163cd667d852b98635213b74c23c5c7c0445
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_VERSION:=$(PKG_REV)
@@ -86,13 +86,6 @@ Package/shadowsocks-libev-spec-polarssl/postinst = $(Package/shadowsocks-libev-s
 
 # Use shared lib provided by OpenWrt, and use our SSP settings
 CONFIGURE_ARGS += --enable-system-shared-lib --disable-ssp
-
-TARGET_CFLAGS += -ffunction-sections -fdata-sections
-TARGET_LDFLAGS += -Wl,--gc-sections
-
-# Use Link time optimization for GCC 5
-TARGET_CFLAGS += -flto
-TARGET_LDFLAGS += -Wl,-flto
 
 ifeq ($(BUILD_VARIANT),polarssl)
 	CONFIGURE_ARGS += --with-crypto-library=polarssl
