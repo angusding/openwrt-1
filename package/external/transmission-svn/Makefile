@@ -7,18 +7,16 @@
 
 include $(TOPDIR)/rules.mk
 
-PKG_BRANCH:=trunk
-PKG_SOURCE_URL:=svn://svn.transmissionbt.com/Transmission/trunk
-PKG_REV:=14624
-
 PKG_NAME:=transmission-svn
 PKG_VERSION:=2.90
-PKG_RELEASE:=r$(PKG_REV)
+PKG_RELEASE:=1
+PKG_REV:=de304e8a35a121452c14c06e4d4b9fd9a4cad21f
 
-PKG_SOURCE_PROTO:=svn
+PKG_SOURCE_PROTO:=git
 PKG_SOURCE_VERSION:=$(PKG_REV)
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.bz2
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_RELEASE).tar.bz2
+PKG_SOURCE_URL:=https://github.com/transmission/transmission.git
 
 PKG_FIXUP:=autoreconf
 PKG_INSTALL:=1
