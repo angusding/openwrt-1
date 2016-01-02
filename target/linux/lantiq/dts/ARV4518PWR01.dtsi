@@ -1,27 +1,23 @@
-/dts-v1/;
-
 /include/ "danube.dtsi"
 
 / {
-	model = "ARV4519PW - Vodafone Netfaster IAD 2, Pirelli P.RG A4201G";
-
 	chosen {
 		bootargs = "console=ttyLTQ0,115200 init=/etc/preinit";
 
 		leds {
-			boot = &power_green;
-			failsafe = &power_red;
-			running = &power_green;
+			boot = &power;
+			failsafe = &power;
+			running = &power;
 
 			dsl = &dsl;
-			internet = &internet_green;
+			internet = &online;
 			usb = &usb;
 			wifi = &wifi;
 		};
 	};
 
 	memory@0 {
-		reg = <0x0 0x2000000>;
+		reg = <0x0 0x4000000>;
 	};
 
 	sram@1F000000 {
@@ -42,13 +38,14 @@
 
 				partition@0 {
 					label = "uboot";
-					reg = <0x00000 0x10000>;
+					reg = <0x00000 0x10000>; /* 64 KB */
 					read-only;
 				};
 
 				partition@10000 {
 					label = "uboot_env";
-					reg = <0x10000 0x10000>;
+					reg = <0x10000 0x10000>; /* 64 KB */
+					read-only;
 				};
 
 				partition@20000 {
@@ -56,7 +53,7 @@
 					reg = <0x20000 0x3d0000>;
 				};
 
-				partition@3f0000 {
+				partition@400000 {
 					label = "boardconfig";
 					reg = <0x3f0000 0x10000>;
 					read-only;
@@ -70,12 +67,21 @@
 				#size-cells = <1>;
 				#gpio-cells = <2>;
 				gpio-controller;
-				lantiq,shadow = <0x400>;
+				lantiq,shadow = <0x0>;
 			};
 
 			mac_addr {
 				compatible = "lantiq,eth-mac";
 				reg = <0 0x3f0016 0x6>;
+				mac-increment = <2>;
+			};
+
+			ath5k_eep {
+				compatible = "ath5k,eeprom";
+				reg = <0 0x3f0400 0x1000
+					0 0x3f0016 0x6>;
+				ath,mac-increment = <1>;
+				ath,eep-swap;
 			};
 		};
 
@@ -87,6 +93,19 @@
 				ebu {
 					lantiq,groups = "ebu cs1";
 					lantiq,function = "ebu";
+				};
+				pci_in {
+					lantiq,groups = "req1", "req2";
+					lantiq,function = "pci";
+					lantiq,open-drain = <1>;
+					lantiq,pull = <2>;
+					lantiq,output = <0>;
+				};
+				pci_out {
+					lantiq,groups = "gnt1", "gnt2";
+					lantiq,function = "pci";
+					lantiq,pull = <0>;
+					lantiq,output = <1>;
 				};
 			};
 		};
@@ -102,10 +121,10 @@
 
 		pci@E105400 {
 			status = "okay";
-			lantiq,external-clock;
 			gpio-reset = <&gpio 21 0>;
 			req-mask = <0xf>;
 		};
+
 	};
 
 	gpio-keys-polled {
@@ -128,63 +147,50 @@
 
 	gpio-leds {
 		compatible = "gpio-leds";
-
-		power_green: power {
-			label = "arv4519pw:green:power";
-			gpios = <&gpio 2 1>;
+		power: power {
+			label = "power";
+			gpios = <&gpio 3 0>;
 			default-state = "keep";
 		};
-		power_red: power2 {
-			label = "arv4519pw:red:power";
-			gpios = <&gpio 7 1>;
-		};
-		wifi: wifi {
-			label = "arv4519pw:green:wlan";
-			gpios = <&gpio 6 1>;
-		};
 		dsl: dsl {
-			label = "arv4519pw:green:dsl";
+			label = "dsl";
 			gpios = <&gpio 4 1>;
 		};
-		internet_green: online {
-			label = "arv4519pw:green:internet";
+		online: online {
+			label = "online";
 			gpios = <&gpio 5 1>;
 		};
-		online2 {
-			label = "arv4519pw:red:internet";
+		wifi: wifi {
+			label = "wifi";
+			gpios = <&gpio 6 1>;
+		};
+		wps {
+			label = "wps";
+			gpios = <&gpio 7 1>;
+		};
+		dsl2 {
+			label = "dsl2";
 			gpios = <&gpio 8 1>;
 		};
 		usb: usb {
-			label = "arv4519pw:green:usb";
+			label = "usb";
 			gpios = <&gpio 19 1>;
 		};
-		voip {
-			label = "arv4519pw:green:voip";
+		voice {
+			label = "voice";
 			gpios = <&gpiomm 0 1>;
 		};
 		fxs1 {
-			label = "arv4519pw:green:phone1";
+			label = "fxs1";
 			gpios = <&gpiomm 1 1>;
 		};
 		fxs2 {
-			label = "arv4519pw:green:phone2";
+			label = "fxs2";
 			gpios = <&gpiomm 2 1>;
 		};
 		fxo {
-			label = "arv4519pw:green:line";
+			label = "fxo";
 			gpios = <&gpiomm 3 1>;
-		};
-		wps2 {
-			label = "arv4519pw:green:wps";
-			gpios = <&gpiomm 4 1>;
-		};
-		wps {
-			label = "arv4519pw:orange:wps";
-			gpios = <&gpiomm 5 1>;
-		};
-		wps3 {
-			label = "arv4519pw:red:wps";
-			gpios = <&gpiomm 6 1>;
 		};
 	};
 };
