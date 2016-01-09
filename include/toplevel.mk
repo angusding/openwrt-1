@@ -39,6 +39,7 @@ unexport LPATH
 
 # make sure that a predefined CFLAGS variable does not disturb packages
 export CFLAGS=
+export LDFLAGS=
 
 empty:=
 space:= $(empty) $(empty)
