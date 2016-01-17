@@ -1,6 +1,6 @@
 --- a/include/mbedtls/config.h
 +++ b/include/mbedtls/config.h
-@@ -184,7 +184,7 @@
+@@ -183,7 +183,7 @@
   *
   * Uncomment to get errors on using deprecated functions.
   */
@@ -80,8 +80,8 @@
 +//#define MBEDTLS_KEY_EXCHANGE_ECDH_RSA_ENABLED
  
  /**
-  * \def MBEDTLS_PK_PARSE_EC_EXTENDED
-@@ -813,7 +813,7 @@
+  * \def MBEDTLS_KEY_EXCHANGE_ECJPAKE_ENABLED
+@@ -832,7 +832,7 @@
   *
   * Comment this macro to disable support for external private RSA keys.
   */
@@ -90,7 +90,7 @@
  
  /**
   * \def MBEDTLS_PKCS1_V15
-@@ -845,14 +845,14 @@
+@@ -864,14 +864,14 @@
   * Uncomment this macro to disable the use of CRT in RSA.
   *
   */
@@ -107,7 +107,7 @@
  
  /**
   * \def MBEDTLS_SHA256_SMALLER
-@@ -868,7 +868,7 @@
+@@ -887,7 +887,7 @@
   *
   * Uncomment to enable the smaller implementation of SHA256.
   */
@@ -116,7 +116,7 @@
  
  /**
   * \def MBEDTLS_SSL_AEAD_RANDOM_IV
-@@ -1041,7 +1041,7 @@
+@@ -1060,7 +1060,7 @@
   *
   * Comment this macro to disable support for SSL 3.0
   */
@@ -125,7 +125,7 @@
  
  /**
   * \def MBEDTLS_SSL_PROTO_TLS1
-@@ -1195,7 +1195,7 @@
+@@ -1224,7 +1224,7 @@
   *
   * Comment this macro to disable support for truncated HMAC in SSL
   */
@@ -134,3 +134,57 @@
  
  /**
   * \def MBEDTLS_THREADING_ALT
+@@ -1594,7 +1594,7 @@
+  * This module enables the AES-CCM ciphersuites, if other requisites are
+  * enabled as well.
+  */
+-#define MBEDTLS_CCM_C
++//#define MBEDTLS_CCM_C
+ 
+ /**
+  * \def MBEDTLS_CERTS_C
+@@ -1606,7 +1606,7 @@
+  *
+  * This module is used for testing (ssl_client/server).
+  */
+-#define MBEDTLS_CERTS_C
++//#define MBEDTLS_CERTS_C
+ 
+ /**
+  * \def MBEDTLS_CIPHER_C
+@@ -1646,7 +1646,7 @@
+  *
+  * This module provides debugging functions.
+  */
+-#define MBEDTLS_DEBUG_C
++//#define MBEDTLS_DEBUG_C
+ 
+ /**
+  * \def MBEDTLS_DES_C
+@@ -1686,7 +1686,7 @@
+  * This module is used by the following key exchanges:
+  *      DHE-RSA, DHE-PSK
+  */
+-#define MBEDTLS_DHM_C
++//#define MBEDTLS_DHM_C
+ 
+ /**
+  * \def MBEDTLS_ECDH_C
+@@ -2096,7 +2096,7 @@
+  * Caller:  library/mbedtls_md.c
+  *
+  */
+-#define MBEDTLS_RIPEMD160_C
++//#define MBEDTLS_RIPEMD160_C
+ 
+ /**
+  * \def MBEDTLS_RSA_C
+@@ -2394,7 +2394,7 @@
+  * Module:  library/xtea.c
+  * Caller:
+  */
+-#define MBEDTLS_XTEA_C
++//#define MBEDTLS_XTEA_C
+ 
+ /* \} name SECTION: mbed TLS modules */
+ 
