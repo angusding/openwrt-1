@@ -2803,6 +2803,7 @@ CONFIG_PACKAGE_libuci-lua=y
 # CONFIG_PACKAGE_libusb-compat is not set
 # CONFIG_PACKAGE_libusbmuxd is not set
 # CONFIG_PACKAGE_libustream-cyassl is not set
+# CONFIG_PACKAGE_libustream-mbedtls is not set
 # CONFIG_PACKAGE_libustream-openssl is not set
 # CONFIG_PACKAGE_libustream-polarssl is not set
 CONFIG_PACKAGE_libuuid=y
@@ -2963,6 +2964,7 @@ CONFIG_PACKAGE_luci-app-samba40=y
 # CONFIG_PACKAGE_luci-app-tinyproxy is not set
 CONFIG_PACKAGE_luci-app-transmission=y
 # CONFIG_PACKAGE_luci-app-udpxy is not set
+# CONFIG_PACKAGE_luci-app-uhttpd is not set
 CONFIG_PACKAGE_luci-app-upnp=y
 # CONFIG_PACKAGE_luci-app-vnstat is not set
 CONFIG_PACKAGE_luci-app-vsftpd=y
@@ -3958,6 +3960,7 @@ CONFIG_PACKAGE_shadowsocks-libev=y
 # CONFIG_PACKAGE_vsc7385-ucode-pb44 is not set
 # CONFIG_PACKAGE_vsc7395-ucode-ap83 is not set
 # CONFIG_PACKAGE_vsc7395-ucode-pb44 is not set
+# CONFIG_PACKAGE_vti is not set
 # CONFIG_PACKAGE_wpa-cli is not set
 # CONFIG_PACKAGE_wpa-supplicant is not set
 # CONFIG_WPA_SUPPLICANT_NO_TIMESTAMP_CHECK is not set
