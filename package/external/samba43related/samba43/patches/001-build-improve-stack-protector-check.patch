@@ -20,8 +20,6 @@ Signed-off-by: Gustavo Zacarias <gustavo@zacarias.com.ar>
  buildtools/wafsamba/samba_autoconf.py | 20 +++++++++++++++++---
  1 file changed, 17 insertions(+), 3 deletions(-)
 
-diff --git a/buildtools/wafsamba/samba_autoconf.py b/buildtools/wafsamba/samba_autoconf.py
-index c5f132c..ef34b00 100644
 --- a/buildtools/wafsamba/samba_autoconf.py
 +++ b/buildtools/wafsamba/samba_autoconf.py
 @@ -657,9 +657,23 @@ def SAMBA_CONFIG_H(conf, path=None):
@@ -51,6 +49,3 @@ index c5f132c..ef34b00 100644
  
      if Options.options.debug:
          conf.ADD_CFLAGS('-g', testflags=True)
--- 
-2.4.6
-

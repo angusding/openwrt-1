@@ -1,6 +1,6 @@
 --- a/source3/param/loadparm.c
 +++ b/source3/param/loadparm.c
-@@ -4450,3 +4450,17 @@ unsigned int * get_flags(void)
+@@ -4432,3 +4432,17 @@ unsigned int * get_flags(void)
  
  	return flags_list;
  }
@@ -16,11 +16,11 @@
 +
 +void lp_set_ldap_suffix(const char *suffix)
 +{
-+	string_set(Globals.ctx, &Globals.ldap_suffix, suffix);
++	lpcfg_string_set(Globals.ctx, &Globals.ldap_suffix, suffix);
 +}
 --- a/source3/include/proto.h
 +++ b/source3/include/proto.h
-@@ -1105,6 +1105,8 @@ char* lp_perfcount_module(TALLOC_CTX *ct
+@@ -1104,6 +1104,8 @@ char* lp_perfcount_module(TALLOC_CTX *ct
  void widelinks_warning(int snum);
  const char *lp_ncalrpc_dir(void);
  void _lp_set_server_role(int server_role);

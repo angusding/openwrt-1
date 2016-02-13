@@ -8,19 +8,19 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=samba43
-PKG_VERSION:=4.3.1
+PKG_VERSION:=4.3.4
 PKG_RELEASE:=1
 
 PKG_SOURCE_URL:=http://ftp.samba.org/pub/samba \
 	http://ftp.samba.org/pub/samba/old-versions
 PKG_SOURCE:=samba-$(PKG_VERSION).tar.gz
 PKG_BUILD_DIR:=$(BUILD_DIR)/samba-$(PKG_VERSION)
-PKG_MD5SUM:=e63a481cad0603db1a9239d7606cbc9a
+PKG_MD5SUM:=48df803c6c6c475a714cae82a2dc219e
 
 PKG_LICENSE:=GPLv3
 PKG_LICENSE_FILES:=COPYING
 
-PKG_BUILD_DEPENDS:=python-light libpopt
+PKG_BUILD_DEPENDS:=python-light libpopt heimdal
 
 PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
@@ -56,17 +56,29 @@ define Package/samba43-server/config
 endef
 
 TARGET_CFLAGS += -ffunction-sections -fdata-sections
+EXTRA_CFLAGS += \
+	-Wno-deprecated-declarations
 TARGET_LDFLAGS += -Wl,--gc-sections
 
 # Use host compiled python2 as interpreter
 # Use target python2-config to retrive cflags, ldflags, libs, etc.
 # Must have python2 patched to make python2-config works
+
+#	_python_sysroot="$(STAGING_DIR)" \
+	_python_prefix="/usr" \
+	_python_exec_prefix="/usr/bin" \
+	PYTHON="$(STAGING_DIR_HOST)/bin/python2"
+	
 CONFIGURE_VARS += \
-	PYTHON="$(STAGING_DIR_HOST)/bin/python2" \
 	PYTHON_CONFIG="$(STAGING_DIR)/usr/bin/python2-config" \
 	python_LDFLAGS="" \
 	python_LIBDIR=""
 
+SAMBA4_IDMAP_MODULES := "idmap_ad,idmap_rid,idmap_adex,idmap_hash,idmap_tdb2"
+SAMBA4_PDB_MODULES := "pdb_tdbsam,pdb_ldap,pdb_ads,pdb_smbpasswd,pdb_wbc_sam,pdb_samba4"
+SAMBA4_AUTH_MODULES := "auth_unix,auth_wbc,auth_server,auth_netlogond,auth_script,auth_samba4"
+SAMBA4_MODULES = "${SAMBA4_IDMAP_MODULES},${SAMBA4_PDB_MODULES},${SAMBA4_AUTH_MODULES}"
+ 
 # Taken from package-defaults.mk
 SAMBA_CONFIGURE_ARGS += \
 		--target=$(GNU_TARGET_NAME) \
@@ -170,7 +182,8 @@ define Build/Configure
 			--without-utmp \
 			--without-winbind \
 			--nonshared-binary=$(PKG_NAME)_multicall \
-			--bundled-libraries=ALL \
+			--with-shared-modules=${SAMBA4_MODULES} \
+			--bundled-libraries='heimdal,!asn1_compile,!compile_et,!zlib,popt,talloc,pytalloc,pytalloc-util' \
 			--without-quotas \
 			--with-syslog \
 			--nopyc \
