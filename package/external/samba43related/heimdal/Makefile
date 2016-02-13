@@ -16,14 +16,25 @@ PKG_BUILD_DEPENDS:=heimdal/host
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=http://www.h5l.org/dist/src/
+PKG_MD5SUM:=30b379e3de12f332fbd201131f02ffca
 #PKG_FIXUP:=autoreconf
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/host-build.mk
 
 HOST_CONFIGURE_ARGS += \
-	--enable-static \
 	--disable-shared \
+	--enable-static \
+	--without-openldap \
+	--without-capng \
+	--without-sqlite3 \
+	--without-libintl \
+	--without-openssl \
+	--without-berkeley-db \
+	--without-readline \
+	--without-libedit \
+	--without-hesiod \
+	--without-x \
 	--disable-heimdal-documentation
 
 define Host/Compile
@@ -37,10 +48,10 @@ define Host/Compile
 endef
 
 define Host/Install
-	$(INSTALL_DIR) $(STAGING_DIR_HOST)/bin
-	$(CP) $(HOST_BUILD_DIR)/lib/com_err/compile_et $(STAGING_DIR_HOST)/bin
-	$(CP) $(HOST_BUILD_DIR)/lib/asn1/asn1_compile $(STAGING_DIR_HOST)/bin
-	$(CP) $(HOST_BUILD_DIR)/lib/sl/slc $(STAGING_DIR_HOST)/bin
+	$(INSTALL_DIR) $(STAGING_DIR)/host/bin
+	$(CP) $(HOST_BUILD_DIR)/lib/com_err/compile_et $(STAGING_DIR)/host/bin
+	$(CP) $(HOST_BUILD_DIR)/lib/asn1/asn1_compile $(STAGING_DIR)/host/bin
+	$(CP) $(HOST_BUILD_DIR)/lib/sl/slc $(STAGING_DIR)/host/bin
 endef
 
 CONFIGURE_ARGS += \
@@ -62,7 +73,7 @@ CONFIGURE_ARGS += \
 	--without-x \
 	--disable-afs-support \
 	--disable-ndbm-db \
-	--disable-mmap \
+	--disable-mmap
 
 EXTRA_CFLAGS += \
 	-Wno-deprecated-declarations \
