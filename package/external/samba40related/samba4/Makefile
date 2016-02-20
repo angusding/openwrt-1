@@ -209,9 +209,6 @@ define Package/samba40-server/install
 	$(LN) ../sbin/samba4_multicall $(1)/usr/bin/smbcacls
 	$(LN) ../sbin/samba4_multicall $(1)/usr/bin/nmblookup
 	$(LN) ../sbin/samba4_multicall $(1)/usr/bin/testparm
-	$(INSTALL_DIR) $(1)/etc/samba
-	$(LN) /var/etc/secrets.tdb $(1)/etc/samba/secrets.tdb
-	$(LN) /var/etc/schannel_store.tdb $(1)/etc/samba/schannel_store.tdb
 endef
 
 define Package/samba40-server/conffiles
