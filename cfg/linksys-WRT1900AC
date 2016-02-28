@@ -38,6 +38,7 @@ CONFIG_TARGET_mvebu=y
 # CONFIG_TARGET_au1000 is not set
 # CONFIG_TARGET_ramips is not set
 # CONFIG_TARGET_arc770 is not set
+# CONFIG_TARGET_archs38 is not set
 # CONFIG_TARGET_ar7 is not set
 # CONFIG_TARGET_omap is not set
 # CONFIG_TARGET_uml is not set
@@ -56,6 +57,7 @@ CONFIG_TARGET_mvebu_Mamba=y
 # CONFIG_TARGET_mvebu_XP-DB is not set
 # CONFIG_TARGET_mvebu_XP-GP is not set
 # CONFIG_TARGET_mvebu_OpenBlocks-AX-3-4 is not set
+# CONFIG_TARGET_mvebu_Solidrun-Clearfog-A1 is not set
 CONFIG_TARGET_BOARD="mvebu"
 CONFIG_TARGET_ARCH_PACKAGES="mvebu"
 CONFIG_DEFAULT_TARGET_OPTIMIZATION="-Os -pipe -march=armv7-a -mtune=cortex-a9 -mfpu=vfpv3-d16"
@@ -268,9 +270,9 @@ CONFIG_BINUTILS_VERSION_2_25_1=y
 CONFIG_BINUTILS_VERSION="2.25.1"
 CONFIG_GCC_VERSION="5.2.0"
 CONFIG_GCC_VERSION_5=y
-CONFIG_MUSL_VERSION="1.1.12"
+CONFIG_MUSL_VERSION="1.1.14"
 CONFIG_LIBC="musl"
-CONFIG_LIBC_VERSION="1.1.12"
+CONFIG_LIBC_VERSION="1.1.14"
 CONFIG_TARGET_SUFFIX="muslgnueabi"
 # CONFIG_IB is not set
 # CONFIG_SDK is not set
@@ -1363,6 +1365,7 @@ CONFIG_PACKAGE_usign=y
 # CONFIG_PACKAGE_iwl4965-firmware is not set
 # CONFIG_PACKAGE_iwlwifi-firmware is not set
 # CONFIG_PACKAGE_libertas-sdio-firmware is not set
+# CONFIG_PACKAGE_libertas-spi-firmware is not set
 # CONFIG_PACKAGE_libertas-usb-firmware is not set
 # CONFIG_PACKAGE_mt7601u-firmware is not set
 # CONFIG_PACKAGE_mwifiex-pcie-firmware is not set
@@ -1951,6 +1954,7 @@ CONFIG_PACKAGE_kmod-cfg80211=y
 # CONFIG_PACKAGE_kmod-iwlwifi is not set
 # CONFIG_PACKAGE_kmod-lib80211 is not set
 # CONFIG_PACKAGE_kmod-libertas-sdio is not set
+# CONFIG_PACKAGE_kmod-libertas-spi is not set
 # CONFIG_PACKAGE_kmod-libertas-usb is not set
 # CONFIG_PACKAGE_kmod-libipw is not set
 CONFIG_PACKAGE_kmod-mac80211=y
@@ -2392,6 +2396,9 @@ CONFIG_PACKAGE_bind-libs=y
 # CONFIG_PACKAGE_ibrdtn is not set
 # CONFIG_PACKAGE_icu is not set
 # CONFIG_PACKAGE_jansson is not set
+# CONFIG_PACKAGE_knot-libdnssec is not set
+# CONFIG_PACKAGE_knot-libknot is not set
+# CONFIG_PACKAGE_knot-libzscanner is not set
 CONFIG_PACKAGE_libaio=y
 # CONFIG_PACKAGE_libantlr3c is not set
 # CONFIG_PACKAGE_libao is not set
@@ -2758,6 +2765,7 @@ CONFIG_PACKAGE_luci-mod-admin-full=y
 #
 # 3. Applications
 #
+# CONFIG_PACKAGE_luci-app-adblock is not set
 # CONFIG_PACKAGE_luci-app-ahcp is not set
 # CONFIG_PACKAGE_luci-app-aria2 is not set
 # CONFIG_PACKAGE_luci-app-asterisk is not set
@@ -2800,7 +2808,7 @@ CONFIG_PACKAGE_luci-app-minidlna=y
 # CONFIG_PACKAGE_luci-app-pbx is not set
 # CONFIG_PACKAGE_luci-app-polipo is not set
 # CONFIG_PACKAGE_luci-app-privoxy is not set
-# CONFIG_PACKAGE_luci-app-qos is not set
+CONFIG_PACKAGE_luci-app-qos=y
 # CONFIG_PACKAGE_luci-app-radicale is not set
 # CONFIG_PACKAGE_luci-app-radvd is not set
 # CONFIG_PACKAGE_luci-app-redsocks2 is not set
@@ -2962,6 +2970,31 @@ CONFIG_PACKAGE_luci-i18n-minidlna-en=y
 # CONFIG_PACKAGE_luci-i18n-minidlna-vi is not set
 CONFIG_PACKAGE_luci-i18n-minidlna-zh-cn=y
 # CONFIG_PACKAGE_luci-i18n-minidlna-zh-tw is not set
+# CONFIG_PACKAGE_luci-i18n-qos-ca is not set
+# CONFIG_PACKAGE_luci-i18n-qos-cs is not set
+# CONFIG_PACKAGE_luci-i18n-qos-de is not set
+# CONFIG_PACKAGE_luci-i18n-qos-el is not set
+CONFIG_PACKAGE_luci-i18n-qos-en=y
+# CONFIG_PACKAGE_luci-i18n-qos-es is not set
+# CONFIG_PACKAGE_luci-i18n-qos-fr is not set
+# CONFIG_PACKAGE_luci-i18n-qos-he is not set
+# CONFIG_PACKAGE_luci-i18n-qos-hu is not set
+# CONFIG_PACKAGE_luci-i18n-qos-it is not set
+# CONFIG_PACKAGE_luci-i18n-qos-ja is not set
+# CONFIG_PACKAGE_luci-i18n-qos-ms is not set
+# CONFIG_PACKAGE_luci-i18n-qos-no is not set
+# CONFIG_PACKAGE_luci-i18n-qos-pl is not set
+# CONFIG_PACKAGE_luci-i18n-qos-pt is not set
+# CONFIG_PACKAGE_luci-i18n-qos-pt-br is not set
+# CONFIG_PACKAGE_luci-i18n-qos-ro is not set
+# CONFIG_PACKAGE_luci-i18n-qos-ru is not set
+# CONFIG_PACKAGE_luci-i18n-qos-sk is not set
+# CONFIG_PACKAGE_luci-i18n-qos-sv is not set
+# CONFIG_PACKAGE_luci-i18n-qos-tr is not set
+# CONFIG_PACKAGE_luci-i18n-qos-uk is not set
+# CONFIG_PACKAGE_luci-i18n-qos-vi is not set
+CONFIG_PACKAGE_luci-i18n-qos-zh-cn=y
+# CONFIG_PACKAGE_luci-i18n-qos-zh-tw is not set
 CONFIG_PACKAGE_luci-i18n-samba40-en=y
 CONFIG_PACKAGE_luci-i18n-samba40-zh-cn=y
 # CONFIG_PACKAGE_luci-i18n-samba40-zh-tw is not set
@@ -3229,7 +3262,7 @@ CONFIG_PACKAGE_ddns-scripts_no-ip_com=y
 # CONFIG_PACKAGE_knot is not set
 # CONFIG_PACKAGE_knot-dig is not set
 # CONFIG_PACKAGE_knot-host is not set
-# CONFIG_PACKAGE_knot-libknot is not set
+# CONFIG_PACKAGE_knot-keymgr is not set
 # CONFIG_PACKAGE_knot-nsec3hash is not set
 # CONFIG_PACKAGE_knot-nsupdate is not set
 # CONFIG_PACKAGE_knot-tests is not set
@@ -4004,6 +4037,8 @@ CONFIG_PACKAGE_fdisk=y
 # CONFIG_PACKAGE_bluez-examples is not set
 # CONFIG_PACKAGE_bluez-utils is not set
 # CONFIG_PACKAGE_bonniexx is not set
+# CONFIG_PACKAGE_bsdiff is not set
+# CONFIG_PACKAGE_bspatch is not set
 # CONFIG_PACKAGE_cal is not set
 # CONFIG_PACKAGE_canutils is not set
 # CONFIG_PACKAGE_ccrypt is not set
@@ -4116,6 +4151,7 @@ CONFIG_PACKAGE_procd-nand=y
 # CONFIG_PACKAGE_pv is not set
 # CONFIG_PACKAGE_px5g is not set
 # CONFIG_PACKAGE_px5g-standalone is not set
+# CONFIG_PACKAGE_qemu-ga is not set
 # CONFIG_PACKAGE_qrencode is not set
 # CONFIG_PACKAGE_rename is not set
 # CONFIG_PACKAGE_rng-tools is not set
