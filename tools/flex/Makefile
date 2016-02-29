@@ -15,6 +15,7 @@ PKG_MD5SUM:=266270f13c48ed043d95648075084d59
 PKG_CAT:=bzcat
 
 HOST_BUILD_PARALLEL:=1
+HOST_FIXUP:=autoreconf
 
 include $(INCLUDE_DIR)/host-build.mk
 
