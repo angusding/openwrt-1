@@ -5,6 +5,7 @@
 # TODO: Refine smb.conf generation
 
 START=60
+USE_PROCD=1
 
 smb_header() {
 	local interface
@@ -115,6 +116,7 @@ init_config() {
 	[ -d /var/cache/samba ] || mkdir -p /var/cache/samba
 	[ -d /var/run/samba ] || mkdir -p /var/run/samba
 	[ -d /var/lock ] || mkdir -p /var/lock
+	chmod 0755 /var/lock
 	
 	config_load samba4
 	config_foreach smb_header samba
