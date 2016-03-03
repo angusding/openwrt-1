@@ -8,19 +8,22 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=samba43
-PKG_VERSION:=4.3.4
+PKG_VERSION:=4.3.5
 PKG_RELEASE:=1
 
-PKG_SOURCE_URL:=http://ftp.samba.org/pub/samba \
+PKG_SOURCE_URL:= \
+	http://download.samba.org/pub/samba/stable \
+	http://ftp.samba.org/pub/samba \
 	http://ftp.samba.org/pub/samba/old-versions
+
 PKG_SOURCE:=samba-$(PKG_VERSION).tar.gz
 PKG_BUILD_DIR:=$(BUILD_DIR)/samba-$(PKG_VERSION)
-PKG_MD5SUM:=48df803c6c6c475a714cae82a2dc219e
+PKG_MD5SUM:=3f904dbc89076212626d7e1601b0ba02
 
 PKG_LICENSE:=GPLv3
 PKG_LICENSE_FILES:=COPYING
 
-PKG_BUILD_DEPENDS:=python-light libpopt heimdal
+PKG_BUILD_DEPENDS:=python-light heimdal
 
 PKG_BUILD_PARALLEL:=1
 PKG_INSTALL:=1
@@ -74,11 +77,23 @@ CONFIGURE_VARS += \
 	python_LDFLAGS="" \
 	python_LIBDIR=""
 
-SAMBA4_IDMAP_MODULES := "idmap_ad,idmap_rid,idmap_adex,idmap_hash,idmap_tdb2"
-SAMBA4_PDB_MODULES := "pdb_tdbsam,pdb_ldap,pdb_ads,pdb_smbpasswd,pdb_wbc_sam,pdb_samba4"
-SAMBA4_AUTH_MODULES := "auth_unix,auth_wbc,auth_server,auth_netlogond,auth_script,auth_samba4"
-SAMBA4_MODULES = "${SAMBA4_IDMAP_MODULES},${SAMBA4_PDB_MODULES},${SAMBA4_AUTH_MODULES}"
- 
+# XXX: Be sure to take care of commas(,) or you will get 'out of range' error when waf configuring settings.
+SAMBA4_IDMAP_MODULES_SHARED := idmap_ad,idmap_rid,idmap_adex,idmap_hash,idmap_tdb2,
+SAMBA4_IDMAP_MODULES_STATIC := 
+SAMBA4_PDB_MODULES_SHARED := pdb_wbc_sam,pdb_samba4,
+SAMBA4_PDB_MODULES_STATIC := pdb_smbpasswd,pdb_tdbsam,
+SAMBA4_AUTH_MODULES_SHARED := auth_wbc,auth_script,auth_samba4
+SAMBA4_AUTH_MODULES_STATIC := auth_sam,auth_unix,
+SAMBA4_VFS_MODULES_STATIC := vfs_default
+
+
+ifdef CONFIG_PACKAGE_samba43-server_asyncio
+	SAMBA4_VFS_MODULES_STATIC := vfs_default,vfs_aio_pthread,vfs_aio_linux
+endif
+
+SAMBA4_MODULES_SHARED = "${SAMBA4_IDMAP_MODULES_SHARED}${SAMBA4_PDB_MODULES_SHARED}${SAMBA4_AUTH_MODULES_SHARED}"
+SAMBA4_MODULES_STATIC = "${SAMBA4_IDMAP_MODULES_STATIC}${SAMBA4_PDB_MODULES_STATIC}${SAMBA4_AUTH_MODULES_STATIC}${SAMBA4_VFS_MODULES_STATIC}"
+
 # Taken from package-defaults.mk
 SAMBA_CONFIGURE_ARGS += \
 		--target=$(GNU_TARGET_NAME) \
@@ -134,6 +149,12 @@ SAMBA43_CACHE := " \
 	\n"
 # 	\nChecking for the maximum value of the 'time_t' type: OK  <<-- check it, not for sure. It seems musl-libc don't have max time_t
 
+# do the renaming trick
+define Build/Prepare
+	$(call Build/Prepare/Default)
+	$(SED) 's#__OPENWRT_SAMBA_MULTICALL__#$(PKG_NAME)_multicall#g' $(PKG_BUILD_DIR)/source3/wscript_build
+endef
+
 define Build/Configure
 	(cd $(PKG_BUILD_DIR); \
 		echo -e >cache.txt $(SAMBA43_CACHE) " \
@@ -182,7 +203,8 @@ define Build/Configure
 			--without-utmp \
 			--without-winbind \
 			--nonshared-binary=$(PKG_NAME)_multicall \
-			--with-shared-modules=${SAMBA4_MODULES} \
+			--with-shared-modules=${SAMBA4_MODULES_SHARED} \
+			--with-static-modules=${SAMBA4_MODULES_STATIC} \
 			--bundled-libraries='heimdal,!asn1_compile,!compile_et,!zlib,popt,talloc,pytalloc,pytalloc-util' \
 			--without-quotas \
 			--with-syslog \
@@ -227,17 +249,18 @@ endef
 # $(shell nproc)
 define Build/Compile
 	(cd $(PKG_BUILD_DIR); \
-		./buildtools/bin/waf build --targets=$(PKG_NAME)_multicall -j1 \
+		./buildtools/bin/waf build \
+		--targets=$(PKG_NAME)_multicall \
+		-j$(shell nproc) \
 	)
 endef
 
-# remove some useless folders after install
+# Do NOT run 'make install' since we only need the multicall binary
 define Build/Install
-	$(call Build/Install/Default)
-	rm -rf $(PKG_INSTALL_DIR)/var $(PKG_INSTALL_DIR)/etc $(PKG_INSTALL_DIR)/usr/lib/{pkgconfig,python2.7}
+	$(RSTRIP) $(PKG_BUILD_DIR)/bin/default/source3/$(PKG_NAME)_multicall
 endef
 
-# Make sure the name of multicall binary matches name in 111-multicall-wscript-build.patch
+# XXX: Make sure the name of multicall binary matches name in 111-multicall-wscript-build.patch
 define Package/samba43-server/install
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_DATA) ./files/$(PKG_NAME).config $(1)/etc/config/samba4
@@ -246,10 +269,11 @@ define Package/samba43-server/install
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./files/$(PKG_NAME).init $(1)/etc/init.d/samba4
 	$(INSTALL_DIR) $(1)/usr/sbin
-	$(INSTALL_BIN) $(PKG_INSTALL_DIR)/usr/sbin/$(PKG_NAME)_multicall $(1)/usr/sbin
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/bin/default/source3/$(PKG_NAME)_multicall $(1)/usr/sbin
 	$(LN) $(PKG_NAME)_multicall $(1)/usr/sbin/smbd
 	$(LN) $(PKG_NAME)_multicall $(1)/usr/sbin/nmbd
 	$(LN) $(PKG_NAME)_multicall $(1)/usr/sbin/smbpasswd
+	$(LN) $(PKG_NAME)_multicall $(1)/usr/sbin/pdbedit
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(LN) ../sbin/$(PKG_NAME)_multicall $(1)/usr/bin/smbcontrol
 	$(LN) ../sbin/$(PKG_NAME)_multicall $(1)/usr/bin/smbtree

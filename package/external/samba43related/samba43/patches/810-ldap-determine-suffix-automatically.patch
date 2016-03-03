@@ -1,6 +1,6 @@
 --- a/source3/param/loadparm.c
 +++ b/source3/param/loadparm.c
-@@ -4432,3 +4432,17 @@ unsigned int * get_flags(void)
+@@ -4449,3 +4449,17 @@ unsigned int * get_flags(void)
  
  	return flags_list;
  }

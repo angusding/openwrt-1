@@ -1,6 +1,6 @@
 #!/bin/sh /etc/rc.common
 # Copyright (C) 2008-2012 OpenWrt.org
-# Copyright (C) 2015 wongsyrone
+# Copyright (C) 2015-2016 wongsyrone
 
 START=60
 USE_PROCD=1

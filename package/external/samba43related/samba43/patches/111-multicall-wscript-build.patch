@@ -1,6 +1,6 @@
 --- a/source3/wscript_build
 +++ b/source3/wscript_build
-@@ -1199,7 +1199,7 @@ bld.SAMBA3_BINARY('smbta-util',
+@@ -1208,7 +1208,7 @@ bld.SAMBA3_BINARY('smbta-util',
                   secrets3
                   param''')
  
@@ -9,7 +9,7 @@
  
  if bld.CONFIG_GET("WITH_PROFILE"):
      smbstatus_source += ' utils/status_profile.c'
-@@ -1514,6 +1514,68 @@ bld.SAMBA3_BINARY('spotlight2sparql',
+@@ -1523,6 +1523,72 @@ bld.SAMBA3_BINARY('spotlight2sparql',
                   enabled=bld.env.with_spotlight,
                   install=False)
  
@@ -54,8 +54,12 @@
 +		     source='utils/testparm.c',
 +		     cflags='-Dmain=testparm_main')
 +
-+bld.SAMBA3_BINARY('samba43_multicall',
-+                 source='''multicall.c 
++bld.SAMBA3_SUBSYSTEM('PDBEDIT_MULTI',
++		     source='utils/pdbedit.c',
++		     cflags='-Dmain=pdbedit_main')
++
++bld.SAMBA3_BINARY('__OPENWRT_SAMBA_MULTICALL__',
++                 source='''multicall.c
 +		 nmbd/asyncdns.c nmbd/nmbd_become_dmb.c
 +                 nmbd/nmbd_become_lmb.c nmbd/nmbd_browserdb.c
 +                 nmbd/nmbd_browsesync.c nmbd/nmbd_elections.c
@@ -70,7 +74,7 @@
 +                 nmbd/nmbd_workgroupdb.c nmbd/nmbd_synclists.c''',
 +                 deps='''smbd_base SMBD_MULTI NMBD_MULTI SMBPASSWD_MULTI
 +		 SMBCONTROL_MULTI SMBTREE_MULTI SMBSTATUS_MULTI
-+		 SMBCQUOTAS_MULTI SMBCACLS_MULTI NMBLOOKUP_MULTI
++		 SMBCQUOTAS_MULTI SMBCACLS_MULTI NMBLOOKUP_MULTI PDBEDIT_MULTI
 +		 PASSWD_UTIL PASSCHANGE TESTPARM_MULTI EPMD LSASD FSSD
 +		 param''',
 +                 install_path='${SBINDIR}')

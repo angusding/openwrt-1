@@ -2,6 +2,8 @@
 # Copyright (C) 2008-2012 OpenWrt.org
 # Copyright (C) 2015 wongsyrone
 
+# TODO: Refine smb.conf generation
+
 START=60
 
 smb_header() {
@@ -107,24 +109,48 @@ smb_add_share() {
 	[ -n "$dir_mask" ] && echo -e "\tdirectory mask = $dir_mask" >> /var/etc/smb.conf
 }
 
-start() {
+init_config() {
+	# Create samba dirs
+	[ -d /var/lib/samba ] || mkdir -p /var/lib/samba
+	[ -d /var/cache/samba ] || mkdir -p /var/cache/samba
+	[ -d /var/run/samba ] || mkdir -p /var/run/samba
+	[ -d /var/lock ] || mkdir -p /var/lock
+	
 	config_load samba4
 	config_foreach smb_header samba
 	config_foreach smb_add_share sambashare
+}
+
+reload_service() {
+	init_config
+
+	killall -HUP smbd
+}
+
+service_triggers() {
+	procd_add_reload_trigger samba4
+}
+
+start_service() {
+	init_config
 
 	if [ "1" = "$ENABLED" ] || [ "on" = "$ENABLED" ] || [ "true" = "$ENABLED" ]; then
-		service_start /usr/sbin/smbd -D
+		procd_open_instance
+		procd_set_param command /usr/sbin/smbd -F
+		procd_set_param respawn
+		procd_close_instance
+		# lower priority using renice in busybox
+		renice -n 2 $(pidof smbd)
+
 		[ "$DISABLENB" != "1" ] && {
-			service_start /usr/sbin/nmbd -D
+			procd_open_instance
+			procd_set_param command /usr/sbin/nmbd -F
+			procd_set_param respawn
+			procd_close_instance
+			# lower priority using renice in busybox
+			renice -n 2 $(pidof nmbd)
 		}
 	else
 		echo "samba4 is disabled"
 	fi
-}
-
-stop() {
-	service_stop /usr/sbin/smbd
-	[ "$DISABLENB" != "1" ] && {
-		service_stop /usr/sbin/nmbd
-	}
 }
