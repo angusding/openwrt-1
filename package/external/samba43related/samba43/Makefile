@@ -58,10 +58,11 @@ define Package/samba43-server/config
 	endif
 endef
 
-TARGET_CFLAGS += -ffunction-sections -fdata-sections
+# fix include "dbwrap/dbwrap_open.h" not found in auth/credentials/credentials_secrets.c -I$(PKG_BUILD_DIR)/source3/lib
 EXTRA_CFLAGS += \
+	-ffunction-sections -fdata-sections \
 	-Wno-deprecated-declarations
-TARGET_LDFLAGS += -Wl,--gc-sections
+EXTRA_LDFLAGS += -Wl,--gc-sections
 
 # Use host compiled python2 as interpreter
 # Use target python2-config to retrive cflags, ldflags, libs, etc.
@@ -202,6 +203,7 @@ define Build/Configure
 			--without-systemd \
 			--without-utmp \
 			--without-winbind \
+			--enable-auto-reconfigure \
 			--nonshared-binary=$(PKG_NAME)_multicall \
 			--with-shared-modules=${SAMBA4_MODULES_SHARED} \
 			--with-static-modules=${SAMBA4_MODULES_STATIC} \
