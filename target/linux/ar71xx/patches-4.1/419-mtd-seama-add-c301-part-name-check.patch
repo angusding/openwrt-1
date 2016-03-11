@@ -1,6 +1,6 @@
 --- a/drivers/mtd/mtdsplit/mtdsplit_seama.c
 +++ b/drivers/mtd/mtdsplit/mtdsplit_seama.c
-@@ -39,6 +39,11 @@ static int mtdsplit_parse_seama(struct m
+@@ -40,6 +40,11 @@ static int mtdsplit_parse_seama(struct m
  	enum mtdsplit_part_type type;
  	int err;
  

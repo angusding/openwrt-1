@@ -113,7 +113,7 @@ Signed-off-by: Felix Fietkau <nbd@openwrt.org>
  #endif
 --- a/include/linux/skbuff.h
 +++ b/include/linux/skbuff.h
-@@ -615,7 +615,8 @@ struct sk_buff {
+@@ -616,7 +616,8 @@ struct sk_buff {
  	__u8			ipvs_property:1;
  	__u8			inner_protocol_type:1;
  	__u8			remcsum_offload:1;
