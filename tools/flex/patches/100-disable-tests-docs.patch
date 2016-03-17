@@ -1,11 +1,11 @@
 --- a/Makefile.am
 +++ b/Makefile.am
-@@ -50,10 +50,8 @@ EXTRA_DIST = \
+@@ -45,10 +45,7 @@
  SUBDIRS = \
  	lib \
  	src \
 -	doc \
- 	examples \
+-	examples \
  	po \
 -	tests \
  	tools
