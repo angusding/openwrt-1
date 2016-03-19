@@ -1760,6 +1760,7 @@ CONFIG_PACKAGE_kmod-ifb=y
 # CONFIG_PACKAGE_kmod-mpls is not set
 # CONFIG_PACKAGE_kmod-nat46 is not set
 # CONFIG_PACKAGE_kmod-netem is not set
+# CONFIG_PACKAGE_kmod-openvswitch is not set
 # CONFIG_PACKAGE_kmod-pktgen is not set
 CONFIG_PACKAGE_kmod-ppp=y
 # CONFIG_PACKAGE_kmod-mppe is not set
@@ -2164,7 +2165,6 @@ CONFIG_PACKAGE_lua=y
 #
 # Tcl
 #
-# CONFIG_PACKAGE_tcl is not set
 # CONFIG_PACKAGE_vala is not set
 
 #
@@ -2400,29 +2400,15 @@ CONFIG_PACKAGE_bind-libs=y
 # CONFIG_PACKAGE_knot-libdnssec is not set
 # CONFIG_PACKAGE_knot-libknot is not set
 # CONFIG_PACKAGE_knot-libzscanner is not set
-CONFIG_PACKAGE_libaio=y
-# CONFIG_PACKAGE_libantlr3c is not set
-# CONFIG_PACKAGE_libao is not set
 # CONFIG_PACKAGE_libapr is not set
 # CONFIG_PACKAGE_libaprutil is not set
-# CONFIG_PACKAGE_libarchive is not set
-# CONFIG_PACKAGE_libarchive-noopenssl is not set
-# CONFIG_PACKAGE_libartnet is not set
-# CONFIG_PACKAGE_libaudiofile is not set
 # CONFIG_PACKAGE_libavahi-client is not set
 # CONFIG_PACKAGE_libavahi-compat-libdnssd is not set
 # CONFIG_PACKAGE_libavahi-dbus-support is not set
 # CONFIG_PACKAGE_libavahi-nodbus-support is not set
-# CONFIG_PACKAGE_libavl is not set
 # CONFIG_PACKAGE_libbfd is not set
 CONFIG_PACKAGE_libblkid=y
-CONFIG_PACKAGE_libblobmsg-json=y
-# CONFIG_PACKAGE_libcanfestival is not set
-# CONFIG_PACKAGE_libcap is not set
 # CONFIG_PACKAGE_libcares is not set
-# CONFIG_PACKAGE_libcharset is not set
-# CONFIG_PACKAGE_libcoap is not set
-# CONFIG_PACKAGE_libconfig is not set
 CONFIG_PACKAGE_libcurl=y
 
 #
@@ -2467,17 +2453,42 @@ CONFIG_LIBCURL_PROXY=y
 # CONFIG_LIBCURL_UNIX_SOCKETS is not set
 # CONFIG_LIBCURL_LIBCURL_OPTION is not set
 # CONFIG_LIBCURL_VERBOSE is not set
+# CONFIG_PACKAGE_libdb47 is not set
+# CONFIG_PACKAGE_libdb47xx is not set
+# CONFIG_PACKAGE_libdbus is not set
+# CONFIG_PACKAGE_libelf1 is not set
+# CONFIG_PACKAGE_libexpat is not set
+# CONFIG_PACKAGE_libf2fs is not set
+# CONFIG_PACKAGE_libfaad2 is not set
+CONFIG_PACKAGE_libfdisk=y
+# CONFIG_PACKAGE_libffmpeg-audio-dec is not set
+CONFIG_PACKAGE_libffmpeg-full=y
+# CONFIG_PACKAGE_libffmpeg-mini is not set
+CONFIG_PACKAGE_libflac=y
+# CONFIG_PACKAGE_libfreetype is not set
+# CONFIG_PACKAGE_libgdbm is not set
+# CONFIG_PACKAGE_libglpk is not set
+CONFIG_PACKAGE_libaio=y
+# CONFIG_PACKAGE_libantlr3c is not set
+# CONFIG_PACKAGE_libao is not set
+# CONFIG_PACKAGE_libarchive is not set
+# CONFIG_PACKAGE_libarchive-noopenssl is not set
+# CONFIG_PACKAGE_libartnet is not set
+# CONFIG_PACKAGE_libaudiofile is not set
+# CONFIG_PACKAGE_libavl is not set
+CONFIG_PACKAGE_libblobmsg-json=y
+# CONFIG_PACKAGE_libcanfestival is not set
+# CONFIG_PACKAGE_libcap is not set
+# CONFIG_PACKAGE_libcharset is not set
+# CONFIG_PACKAGE_libcoap is not set
+# CONFIG_PACKAGE_libconfig is not set
 # CONFIG_PACKAGE_libdaemon is not set
 # CONFIG_PACKAGE_libdaq is not set
-CONFIG_PACKAGE_libdb47=y
-# CONFIG_PACKAGE_libdb47xx is not set
 # CONFIG_PACKAGE_libdbi is not set
-# CONFIG_PACKAGE_libdbus is not set
 # CONFIG_PACKAGE_libdevmapper is not set
 # CONFIG_PACKAGE_libdmapsharing is not set
 # CONFIG_PACKAGE_libdnet is not set
 # CONFIG_PACKAGE_libdrpc is not set
-# CONFIG_PACKAGE_libelf1 is not set
 # CONFIG_PACKAGE_libesmtp is not set
 # CONFIG_PACKAGE_libestr is not set
 CONFIG_PACKAGE_libev=y
@@ -2491,26 +2502,15 @@ CONFIG_PACKAGE_libevent2=y
 # CONFIG_PACKAGE_libevhtp is not set
 # CONFIG_PACKAGE_libevhtp-1.1 is not set
 CONFIG_PACKAGE_libexif=y
-# CONFIG_PACKAGE_libexpat is not set
 # CONFIG_PACKAGE_libexslt is not set
 # CONFIG_PACKAGE_libextractor is not set
-# CONFIG_PACKAGE_libf2fs is not set
-# CONFIG_PACKAGE_libfaad2 is not set
-CONFIG_PACKAGE_libfdisk=y
 # CONFIG_PACKAGE_libffi is not set
-# CONFIG_PACKAGE_libffmpeg-audio-dec is not set
-CONFIG_PACKAGE_libffmpeg-full=y
-# CONFIG_PACKAGE_libffmpeg-mini is not set
-CONFIG_PACKAGE_libflac=y
 # CONFIG_PACKAGE_libfreecwmp is not set
-# CONFIG_PACKAGE_libfreetype is not set
 # CONFIG_PACKAGE_libftdi is not set
 # CONFIG_PACKAGE_libftdi1 is not set
 # CONFIG_PACKAGE_libgcrypt is not set
 # CONFIG_PACKAGE_libgd is not set
-# CONFIG_PACKAGE_libgdbm is not set
 # CONFIG_PACKAGE_libgee is not set
-# CONFIG_PACKAGE_libglpk is not set
 CONFIG_PACKAGE_libgmp=y
 # CONFIG_PACKAGE_libgnurl is not set
 # CONFIG_PACKAGE_libgpg-error is not set
@@ -2549,6 +2549,7 @@ CONFIG_PACKAGE_libmnl=y
 # CONFIG_PACKAGE_libmodbus is not set
 # CONFIG_PACKAGE_libmosquitto is not set
 # CONFIG_PACKAGE_libmosquitto-nossl is not set
+# CONFIG_PACKAGE_libmosquittopp is not set
 CONFIG_PACKAGE_libmount=y
 # CONFIG_PACKAGE_libmpdclient is not set
 # CONFIG_PACKAGE_libmpeg2 is not set
@@ -2595,7 +2596,7 @@ CONFIG_PACKAGE_libogg=y
 # CONFIG_PACKAGE_libowfat is not set
 # CONFIG_PACKAGE_libp11 is not set
 # CONFIG_PACKAGE_libpam is not set
-CONFIG_PACKAGE_libpam-db=y
+# CONFIG_PACKAGE_libpam-db is not set
 CONFIG_PACKAGE_libpcap=y
 
 #
@@ -2687,7 +2688,7 @@ CONFIG_PACKAGE_libvorbis=y
 # CONFIG_PACKAGE_libwrap is not set
 # CONFIG_PACKAGE_libxerces-c is not set
 # CONFIG_PACKAGE_libxerces-c-samples is not set
-CONFIG_PACKAGE_libxml2=y
+# CONFIG_PACKAGE_libxml2 is not set
 # CONFIG_PACKAGE_libxslt is not set
 # CONFIG_PACKAGE_libyang is not set
 # CONFIG_PACKAGE_libzdb is not set
@@ -2700,6 +2701,7 @@ CONFIG_PACKAGE_libxml2=y
 # CONFIG_PACKAGE_nacl is not set
 # CONFIG_PACKAGE_opencv is not set
 # CONFIG_PACKAGE_p11-kit is not set
+# CONFIG_PACKAGE_poco is not set
 # CONFIG_PACKAGE_protobuf is not set
 # CONFIG_PACKAGE_pthsem is not set
 # CONFIG_PACKAGE_sbc is not set
@@ -2811,7 +2813,6 @@ CONFIG_PACKAGE_luci-app-minidlna=y
 # CONFIG_PACKAGE_luci-app-privoxy is not set
 CONFIG_PACKAGE_luci-app-qos=y
 # CONFIG_PACKAGE_luci-app-radicale is not set
-# CONFIG_PACKAGE_luci-app-radvd is not set
 # CONFIG_PACKAGE_luci-app-redsocks2 is not set
 # CONFIG_PACKAGE_luci-app-samba is not set
 # CONFIG_PACKAGE_luci-app-samba40 is not set
@@ -3150,8 +3151,8 @@ CONFIG_PACKAGE_curl=y
 # CONFIG_PACKAGE_lftp is not set
 # CONFIG_PACKAGE_rsync is not set
 # CONFIG_PACKAGE_rsyncd is not set
-# CONFIG_PACKAGE_vsftpd is not set
-CONFIG_PACKAGE_vsftpd-pam=y
+CONFIG_PACKAGE_vsftpd=y
+CONFIG_VSFTPD_USE_UCI_SCRIPTS=y
 # CONFIG_PACKAGE_vsftpd-tls is not set
 # CONFIG_PACKAGE_wget is not set
 # CONFIG_PACKAGE_wget-nossl is not set
@@ -3361,6 +3362,16 @@ CONFIG_PACKAGE_ddns-scripts_no-ip_com=y
 #
 # Open vSwitch
 #
+# CONFIG_PACKAGE_openvswitch is not set
+# CONFIG_PACKAGE_openvswitch-base is not set
+# CONFIG_PACKAGE_openvswitch-benchmark is not set
+# CONFIG_PACKAGE_openvswitch-ipsec is not set
+# CONFIG_PACKAGE_openvswitch-ovs-appctl is not set
+# CONFIG_PACKAGE_openvswitch-ovs-dpctl is not set
+# CONFIG_PACKAGE_openvswitch-ovs-ofctl is not set
+# CONFIG_PACKAGE_openvswitch-ovs-vsctl is not set
+# CONFIG_PACKAGE_openvswitch-ovsdb-client is not set
+# CONFIG_PACKAGE_openvswitch-python is not set
 
 #
 # Printing
@@ -4055,18 +4066,7 @@ CONFIG_PACKAGE_fdisk=y
 # CONFIG_PACKAGE_crelay is not set
 # CONFIG_PACKAGE_cryptsetup is not set
 # CONFIG_PACKAGE_cryptsetup-openssl is not set
-CONFIG_PACKAGE_db47-util=y
-CONFIG_DB47_ARCHIVE=y
-CONFIG_DB47_CHECKPOINT=y
-CONFIG_DB47_DEADLOCK=y
-CONFIG_DB47_DUMP=y
-CONFIG_DB47_HOTBACKUP=y
-CONFIG_DB47_LOAD=y
-CONFIG_DB47_PRINTLOG=y
-CONFIG_DB47_RECOVER=y
-CONFIG_DB47_STAT=y
-CONFIG_DB47_UPGRADE=y
-CONFIG_DB47_VERIFY=y
+# CONFIG_PACKAGE_db47-util is not set
 # CONFIG_PACKAGE_dbus is not set
 # CONFIG_PACKAGE_dfu-programmer is not set
 # CONFIG_PACKAGE_dmesg is not set
