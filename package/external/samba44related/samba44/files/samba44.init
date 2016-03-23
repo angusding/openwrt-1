@@ -116,10 +116,8 @@ init_config() {
 	[ -d /var/lib/samba ] || mkdir -p /var/lib/samba
 	[ -d /var/cache/samba ] || mkdir -p /var/cache/samba
 	[ -d /var/run/samba ] || mkdir -p /var/run/samba
-	[ -d /var/lock ] || {
-		mkdir -p /var/lock
-		chmod 0755 /var/lock
-	}
+	[ -d /var/lock ] || mkdir -p /var/lock
+	chmod 0755 /var/lock
 	
 	config_load samba4
 	config_foreach smb_header samba

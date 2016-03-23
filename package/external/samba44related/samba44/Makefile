@@ -7,8 +7,8 @@
 
 include $(TOPDIR)/rules.mk
 
-PKG_NAME:=samba43
-PKG_VERSION:=4.3.6
+PKG_NAME:=samba44
+PKG_VERSION:=4.4.0
 PKG_RELEASE:=1
 
 PKG_SOURCE_URL:= \
@@ -18,7 +18,7 @@ PKG_SOURCE_URL:= \
 
 PKG_SOURCE:=samba-$(PKG_VERSION).tar.gz
 PKG_BUILD_DIR:=$(BUILD_DIR)/samba-$(PKG_VERSION)
-PKG_MD5SUM:=91e5b71b3ae7709246c67c46efa50e7b
+PKG_MD5SUM:=e42b884d0e07528c8571641a4df40666
 
 PKG_LICENSE:=GPLv3
 PKG_LICENSE_FILES:=COPYING
@@ -33,30 +33,22 @@ include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/kernel.mk
 
 
-define Package/samba43-server
+define Package/samba44-server
   SECTION:=net
   CATEGORY:=Network
   TITLE:=Samba $(PKG_VERSION) SMB/CIFS server
   URL:=http://www.samba.org/
-  DEPENDS:=+zlib +libpthread +libpopt +PACKAGE_samba43-server_asyncio:libaio
+  DEPENDS:=+zlib +libpthread +libpopt +PACKAGE_samba44-server_asyncio:libaio
 #DEPENDS+= +libreadline +libuuid +libtirpc libtirpc
 endef
 
-define Package/samba43-server/description
+define Package/samba44-server/description
  The Samba software suite is a collection of programs that implements the
  SMB protocol for UNIX systems, allowing you to serve files and printers to
  Windows, NT, OS/2 and DOS clients. This protocol is sometimes also referred
  to as the LanManager or Netbios protocol.
 endef
 
-define Package/samba43-server/config
-	if PACKAGE_samba43-server
-	config PACKAGE_samba43-server_asyncio
-		bool "Build with Asynchronous I/O support."
-		select KERNEL_AIO
-		default n
-	endif
-endef
 
 # fix include "dbwrap/dbwrap_open.h" not found in auth/credentials/credentials_secrets.c -I$(PKG_BUILD_DIR)/source3/lib
 EXTRA_CFLAGS += \
@@ -85,12 +77,8 @@ SAMBA4_PDB_MODULES_SHARED := pdb_wbc_sam,pdb_samba4,
 SAMBA4_PDB_MODULES_STATIC := pdb_smbpasswd,pdb_tdbsam,
 SAMBA4_AUTH_MODULES_SHARED := auth_wbc,auth_script,auth_samba4
 SAMBA4_AUTH_MODULES_STATIC := auth_sam,auth_unix,
-SAMBA4_VFS_MODULES_STATIC := vfs_default
+SAMBA4_VFS_MODULES_STATIC := vfs_default,vfs_aio_pthread
 
-
-ifdef CONFIG_PACKAGE_samba43-server_asyncio
-	SAMBA4_VFS_MODULES_STATIC := vfs_default,vfs_aio_pthread,vfs_aio_linux
-endif
 
 SAMBA4_MODULES_SHARED = "${SAMBA4_IDMAP_MODULES_SHARED}${SAMBA4_PDB_MODULES_SHARED}${SAMBA4_AUTH_MODULES_SHARED}"
 SAMBA4_MODULES_STATIC = "${SAMBA4_IDMAP_MODULES_STATIC}${SAMBA4_PDB_MODULES_STATIC}${SAMBA4_AUTH_MODULES_STATIC}${SAMBA4_VFS_MODULES_STATIC}"
@@ -186,7 +174,6 @@ define Build/Configure
 			--with-relro \
 			--with-sendfile-support \
 			--without-acl-support \
-			$(if $(CONFIG_PACKAGE_samba43-server_asyncio),--with-aio-support,--without-aio-support) \
 			--without-ads \
 			--without-ad-dc \
 			--without-automount \
@@ -197,7 +184,6 @@ define Build/Configure
 			--without-iconv \
 			--without-ldap \
 			--without-pam \
-			--without-pam_smbpass \
 			--without-pie \
 			--without-regedit \
 			--without-systemd \
@@ -205,8 +191,8 @@ define Build/Configure
 			--without-winbind \
 			--enable-auto-reconfigure \
 			--nonshared-binary=$(PKG_NAME)_multicall \
-			--with-shared-modules=${SAMBA4_MODULES_SHARED} \
 			--with-static-modules=${SAMBA4_MODULES_STATIC} \
+			--with-shared-modules=${SAMBA4_MODULES_SHARED} \
 			--bundled-libraries='heimdal,!asn1_compile,!compile_et,!zlib,popt,talloc,pytalloc,pytalloc-util' \
 			--without-quotas \
 			--with-syslog \
@@ -263,7 +249,7 @@ define Build/Install
 endef
 
 # XXX: Make sure the name of multicall binary matches name in 111-multicall-wscript-build.patch
-define Package/samba43-server/install
+define Package/samba44-server/install
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_DATA) ./files/$(PKG_NAME).config $(1)/etc/config/samba4
 	$(INSTALL_DIR) $(1)/etc/samba
@@ -286,7 +272,7 @@ define Package/samba43-server/install
 	$(LN) ../sbin/$(PKG_NAME)_multicall $(1)/usr/bin/testparm
 endef
 
-define Package/samba43-server/conffiles
+define Package/samba44-server/conffiles
 /etc/config/samba4
 /etc/samba/smb.conf.template
 /etc/samba/smbpasswd

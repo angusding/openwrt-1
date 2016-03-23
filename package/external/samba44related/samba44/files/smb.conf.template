@@ -8,10 +8,10 @@
 	passdb backend = smbpasswd
 	# passdb backend = tdbsam:/etc/samba/passdb.tdb
 	inherit owner = yes
-	create mask = 0700
-	directory mask = 0700
-	force create mode = 0700
-	force directory mode = 0700
+	create mask = 0777
+	directory mask = 0777
+	force create mode = 0777
+	force directory mode = 0777
 	security = user
 	smb encrypt = disabled
 	smb passwd file = /etc/samba/smbpasswd
