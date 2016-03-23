@@ -38,7 +38,7 @@ define Package/samba44-server
   CATEGORY:=Network
   TITLE:=Samba $(PKG_VERSION) SMB/CIFS server
   URL:=http://www.samba.org/
-  DEPENDS:=+zlib +libpthread +libpopt +PACKAGE_samba44-server_asyncio:libaio
+  DEPENDS:=+zlib +libpthread +libpopt
 #DEPENDS+= +libreadline +libuuid +libtirpc libtirpc
 endef
 
