@@ -1,15 +1,15 @@
 --- a/Makefile
 +++ b/Makefile
-@@ -4,7 +4,7 @@
+@@ -3,7 +3,7 @@
+ 
  VERSION = 1.5.2
  
- CPPFLAGS += -D_GNU_SOURCE -I./include -I$(BUILDDIR)/include -I./ubi-utils/include $(ZLIBCPPFLAGS) $(LZOCPPFLAGS) $(UUIDCPPFLAGS)
--CPPFLAGS += -I./include/linux/lzma
-+CPPFLAGS += $(XZCPPFLAGS) -I./include/linux/lzma
+-CPPFLAGS += -D_GNU_SOURCE -D_7ZIP_ST -I./ubi-utils/include -I./include/linux/lzma
++CPPFLAGS += -D_GNU_SOURCE -D_7ZIP_ST -I./ubi-utils/include $(XZCPPFLAGS) -I./include/linux/lzma
  
  ifeq ($(WITHOUT_XATTR), 1)
    CPPFLAGS += -DWITHOUT_XATTR
-@@ -113,8 +113,13 @@ ifeq ($(WITHOUT_LZO), 1)
+@@ -112,8 +112,13 @@ ifeq ($(WITHOUT_LZO), 1)
  else
    LZOLDLIBS = -llzo2
  endif

@@ -102,7 +102,7 @@
  }
 --- a/Makefile
 +++ b/Makefile
-@@ -108,7 +108,13 @@ $(call _mkdep,lib/,libmtd.a)
+@@ -107,7 +107,13 @@ $(call _mkdep,lib/,libmtd.a)
  obj-mkfs.ubifs = crc16.o lpt.o compr.o devtable.o \
  	hashtable/hashtable.o hashtable/hashtable_itr.o
  LDFLAGS_mkfs.ubifs = $(ZLIBLDFLAGS) $(LZOLDFLAGS) $(UUIDLDFLAGS)
