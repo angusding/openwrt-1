@@ -17,7 +17,7 @@ override NO_TRACE_MAKE:=$(_SINGLE)$(NO_TRACE_MAKE)
 KDIR=$(KERNEL_BUILD_DIR)
 KDIR_TMP=$(KDIR)/tmp
 DTS_DIR:=$(LINUX_DIR)/arch/$(LINUX_KARCH)/boot/dts
-BUILD_DATE_PREFIX := $(shell date +'%F')
+BUILD_DATE_PREFIX := $(shell date +"%F")
 
 sanitize = $(call tolower,$(subst _,-,$(1)))
 
