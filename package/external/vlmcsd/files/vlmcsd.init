@@ -54,6 +54,7 @@ stop ()
 		PID=`cat $PIDFILE`
 		kill $PID
 		echo "vlmcsd terminated successfully"
+		rm -f $PIDFILE
 	else
 		echo "vlmcsd is not running"
 	fi
