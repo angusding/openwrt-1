@@ -10,7 +10,7 @@ include $(TOPDIR)/rules.mk
 PKG_NAME:=ubi-utils
 PKG_REV:=90f2151eb19757a27af2dd710237e69a64740c12
 PKG_VERSION:=1.5.2
-PKG_RELEASE:=2
+PKG_RELEASE:=3
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=git://git.infradead.org/mtd-utils.git
