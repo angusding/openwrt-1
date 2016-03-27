@@ -74,7 +74,7 @@
  #endif /* __JFFS2_COMPR_H__ */
 --- /dev/null
 +++ b/compr_lzma.c
-@@ -0,0 +1,128 @@
+@@ -0,0 +1,129 @@
 +/*
 + * JFFS2 -- Journalling Flash File System, Version 2.
 + *
@@ -186,6 +186,7 @@
 +	props.lp = LZMA_BEST_LP;
 +	props.pb = LZMA_BEST_PB;
 +	props.fb = LZMA_BEST_FB;
++	props.numThreads = 1;
 +
 +	ret = lzma_alloc_workspace(&props);
 +	if (ret < 0)
