@@ -19,7 +19,7 @@
  try-run = $(shell set -e; ($(1)) >/dev/null 2>&1 && echo "$(2)" || echo "$(3)")
 --- a/Makefile
 +++ b/Makefile
-@@ -88,10 +88,10 @@ obj-mkfs.jffs2 = compr_rtime.o compr_zli
+@@ -89,10 +89,10 @@ obj-mkfs.jffs2 = compr_rtime.o compr_zli
  	compr_lzma.o lzma/LzFind.o lzma/LzmaEnc.o lzma/LzmaDec.o \
  	compr.o rbtree.o
  LDFLAGS_mkfs.jffs2 = $(ZLIBLDFLAGS) $(LZOLDFLAGS)
@@ -32,7 +32,7 @@
  
  $(foreach v,$(MTD_BINS),$(eval $(call mkdep,,$(v))))
  
-@@ -118,7 +118,7 @@ else
+@@ -119,7 +119,7 @@ else
    XZLDLIBS = -llzma
  endif
  
