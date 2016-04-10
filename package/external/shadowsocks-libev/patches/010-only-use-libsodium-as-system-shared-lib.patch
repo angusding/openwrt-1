@@ -36,7 +36,7 @@
  endif
  
  bin_PROGRAMS = ss-local ss-tunnel
-@@ -67,15 +67,9 @@ ss_local_LDADD = $(SS_COMMON_LIBS)
+@@ -64,15 +64,9 @@ ss_local_LDADD = $(SS_COMMON_LIBS)
  ss_tunnel_LDADD = $(SS_COMMON_LIBS)
  ss_server_LDADD = $(SS_COMMON_LIBS)
  ss_manager_LDADD = $(SS_COMMON_LIBS)
@@ -50,11 +50,11 @@
  ss_server_LDADD += $(top_builddir)/libudns/libudns.la
 -endif
  
- ss_local_CFLAGS = $(AM_CFLAGS) -DUDPRELAY_LOCAL
- ss_tunnel_CFLAGS = $(AM_CFLAGS) -DUDPRELAY_LOCAL -DUDPRELAY_TUNNEL
-@@ -99,12 +93,8 @@ ss_redir_SOURCES = utils.c \
+ ss_local_CFLAGS = $(AM_CFLAGS) -DMODULE_LOCAL
+ ss_tunnel_CFLAGS = $(AM_CFLAGS) -DMODULE_TUNNEL
+@@ -96,12 +90,8 @@ ss_redir_SOURCES = utils.c \
                     redir.c
- ss_redir_CFLAGS = $(AM_CFLAGS) -DUDPRELAY_REDIR -DUDPRELAY_LOCAL
+ ss_redir_CFLAGS = $(AM_CFLAGS) -DMODULE_REDIR
  ss_redir_LDADD = $(SS_COMMON_LIBS)
 -if USE_SYSTEM_SHARED_LIB
 -ss_redir_LDADD += -ludns

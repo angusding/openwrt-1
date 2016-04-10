@@ -17,26 +17,25 @@ Subject: [PATCH] Add keepalive feature for remote connections
  
  int getdestaddr(int fd, struct sockaddr_storage *destaddr)
  {
-@@ -607,6 +608,18 @@ static void accept_cb(EV_P_ ev_io *w, in
+@@ -607,6 +608,7 @@ static void accept_cb(EV_P_ ev_io *w, in
      setsockopt(remotefd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
  #endif
  
 +    if (keepalive) {
-+    //Enable TCP keepalive feature
-+    int keepAlive = 1;
-+    int keepIdle = 40;
-+    int keepInterval = 20;
-+    int keepCount = 5;
-+    setsockopt(remotefd, SOL_SOCKET, SO_KEEPALIVE, (void*)&keepAlive, sizeof(keepAlive));
-+    setsockopt(remotefd, SOL_TCP, TCP_KEEPIDLE, (void*)&keepIdle, sizeof(keepIdle));
-+    setsockopt(remotefd, SOL_TCP, TCP_KEEPINTVL, (void*)&keepInterval, sizeof(keepInterval));
-+    setsockopt(remotefd, SOL_TCP, TCP_KEEPCNT, (void*)&keepCount, sizeof(keepCount));
+     //Enable TCP keepalive feature
+     int keepAlive = 1;
+     int keepIdle = 40;
+@@ -616,7 +618,8 @@ static void accept_cb(EV_P_ ev_io *w, in
+     setsockopt(remotefd, SOL_TCP, TCP_KEEPIDLE, (void*)&keepIdle, sizeof(keepIdle));
+     setsockopt(remotefd, SOL_TCP, TCP_KEEPINTVL, (void*)&keepInterval, sizeof(keepInterval));
+     setsockopt(remotefd, SOL_TCP, TCP_KEEPCNT, (void*)&keepCount, sizeof(keepCount));
+-    
 +    }
 +
      // Setup
      setnonblocking(remotefd);
  
-@@ -642,7 +655,7 @@ int main(int argc, char **argv)
+@@ -652,7 +655,7 @@ int main(int argc, char **argv)
  
      opterr = 0;
  
@@ -45,7 +44,7 @@ Subject: [PATCH] Add keepalive feature for remote connections
          switch (c) {
          case 's':
              if (remote_num < MAX_REMOTE_NUM) {
-@@ -695,6 +708,9 @@ int main(int argc, char **argv)
+@@ -705,6 +708,9 @@ int main(int argc, char **argv)
          case 'A':
              auth = 1;
              break;
@@ -55,7 +54,7 @@ Subject: [PATCH] Add keepalive feature for remote connections
          }
  
      if (opterr) {
-@@ -736,6 +752,9 @@ int main(int argc, char **argv)
+@@ -746,6 +752,9 @@ int main(int argc, char **argv)
          if (auth == 0) {
              auth = conf->auth;
          }
@@ -65,7 +64,7 @@ Subject: [PATCH] Add keepalive feature for remote connections
  #ifdef HAVE_SETRLIMIT
          if (nofile == 0) {
              nofile = conf->nofile;
-@@ -776,6 +795,10 @@ int main(int argc, char **argv)
+@@ -786,6 +795,10 @@ int main(int argc, char **argv)
          LOGI("onetime authentication enabled");
      }
  

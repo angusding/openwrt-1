@@ -1,0 +1,19 @@
+From 9c733c5c4f7674a930d0a04d6f91cf8f3cabd523 Mon Sep 17 00:00:00 2001
+From: H2NCH2COOH <wzpublic@gmail.com>
+Date: Sun, 10 Apr 2016 01:22:07 +0000
+Subject: [PATCH] Fix udp with ip as dst cache hit error
+
+---
+ src/udprelay.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/src/udprelay.c
++++ b/src/udprelay.c
+@@ -1176,6 +1176,7 @@ static void server_recv_cb(EV_P_ ev_io *
+                 remote_ctx->server_ctx      = server_ctx;
+                 remote_ctx->addr_header_len = addr_header_len;
+                 memcpy(remote_ctx->addr_header, addr_header, addr_header_len);
++                memcpy(&remote_ctx->dst_addr, &dst_addr, sizeof(struct sockaddr_storage));
+             } else {
+                 ERROR("[udp] bind() error");
+                 goto CLEAN_UP;
