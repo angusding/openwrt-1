@@ -7,8 +7,8 @@ Signed-off-by: Gustavo Zacarias <gustavo@zacarias.com.ar>
 
 --- a/lib/replace/wscript
 +++ b/lib/replace/wscript
-@@ -247,15 +247,6 @@ def configure(conf):
-     conf.CHECK_FUNCS('strtouq strtoll __strtoll strtoq memalign posix_memalign')
+@@ -256,15 +256,6 @@ def configure(conf):
+ 
      conf.CHECK_FUNCS('prctl dirname basename')
  
 -    # libbsd on some platforms provides strlcpy and strlcat

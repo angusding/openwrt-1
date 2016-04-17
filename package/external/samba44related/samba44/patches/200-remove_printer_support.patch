@@ -41,7 +41,7 @@
  	svcctl_ops[i].ops  = &netlogon_svc_ops;
 --- a/source3/printing/spoolssd.c
 +++ b/source3/printing/spoolssd.c
-@@ -619,6 +619,10 @@ pid_t start_spoolssd(struct tevent_conte
+@@ -614,6 +614,10 @@ pid_t start_spoolssd(struct tevent_conte
  	int ret;
  	bool ok;
  
@@ -67,7 +67,7 @@
  			d_printf(_("Usage:\n"));
 --- a/source3/smbd/reply.c
 +++ b/source3/smbd/reply.c
-@@ -5626,7 +5626,11 @@ void reply_printopen(struct smb_request
+@@ -5765,7 +5765,11 @@ void reply_printopen(struct smb_request
  		return;
  	}
  
@@ -80,7 +80,7 @@
  		reply_nterror(req, NT_STATUS_ACCESS_DENIED);
  		END_PROFILE(SMBsplopen);
  		return;
-@@ -5732,7 +5736,10 @@ void reply_printqueue(struct smb_request
+@@ -5871,7 +5875,10 @@ void reply_printqueue(struct smb_request
  	   is really quite gross and only worked when there was only
  	   one printer - I think we should now only accept it if they
  	   get it right (tridge) */
@@ -228,7 +228,7 @@
  	}
 --- a/source3/smbd/server_exit.c
 +++ b/source3/smbd/server_exit.c
-@@ -204,7 +204,9 @@ static void exit_server_common(enum serv
+@@ -198,7 +198,9 @@ static void exit_server_common(enum serv
  		rpc_eventlog_shutdown();
  		rpc_ntsvcs_shutdown();
  		rpc_svcctl_shutdown();
@@ -277,7 +277,7 @@
  			errno = ret;
 --- a/source3/smbd/smb2_create.c
 +++ b/source3/smbd/smb2_create.c
-@@ -640,7 +640,10 @@ static struct tevent_req *smbd_smb2_crea
+@@ -633,7 +633,10 @@ static struct tevent_req *smbd_smb2_crea
  		}
  
  		status = file_new(smb1req, smb1req->conn, &result);
@@ -291,7 +291,7 @@
  		}
 --- a/source3/smbd/process.c
 +++ b/source3/smbd/process.c
-@@ -2813,8 +2813,10 @@ static bool housekeeping_fn(const struct
+@@ -2895,8 +2895,10 @@ static bool housekeeping_fn(const struct
  
  	change_to_root_user();
  
@@ -304,7 +304,7 @@
  	check_reload(sconn, time_mono(NULL));
 --- a/source3/smbd/server.c
 +++ b/source3/smbd/server.c
-@@ -1577,6 +1577,7 @@ extern void build_options(bool screen);
+@@ -1679,6 +1679,7 @@ extern void build_options(bool screen);
  			start_fssd(ev_ctx, msg_ctx);
  		}
  
@@ -312,7 +312,7 @@
  		if (!lp__disable_spoolss() &&
  		    (rpc_spoolss_daemon() != RPC_DAEMON_DISABLED)) {
  			bool bgq = lp_parm_bool(-1, "smbd", "backgroundqueue", true);
-@@ -1597,6 +1598,7 @@ extern void build_options(bool screen);
+@@ -1699,6 +1700,7 @@ extern void build_options(bool screen);
  		if (!printing_subsystem_init(ev_ctx, msg_ctx, false, false)) {
  			exit(1);
  		}
@@ -320,7 +320,7 @@
  	}
  
  	if (!is_daemon) {
-@@ -1629,12 +1631,14 @@ extern void build_options(bool screen);
+@@ -1731,12 +1733,14 @@ extern void build_options(bool screen);
  	if (!open_sockets_smbd(parent, ev_ctx, msg_ctx, ports))
  		exit_server("open_sockets_smbd() failed");
  

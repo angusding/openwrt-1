@@ -18,7 +18,7 @@
  	if (!ok) {
 --- a/source3/smbd/server_exit.c
 +++ b/source3/smbd/server_exit.c
-@@ -201,9 +201,11 @@ static void exit_server_common(enum serv
+@@ -195,9 +195,11 @@ static void exit_server_common(enum serv
  #endif
  		rpc_netdfs_shutdown();
  		rpc_initshutdown_shutdown();

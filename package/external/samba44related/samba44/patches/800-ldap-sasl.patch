@@ -65,7 +65,7 @@
  	}
 --- a/source3/passdb/secrets.c
 +++ b/source3/passdb/secrets.c
-@@ -362,7 +362,7 @@ bool fetch_ldap_pw(char **dn, char** pw)
+@@ -333,7 +333,7 @@ bool fetch_ldap_pw(char **dn, char** pw)
  
  		data=(char *)secrets_fetch(old_style_key, &size);
  		if ((data == NULL) || (size < sizeof(old_style_pw))) {

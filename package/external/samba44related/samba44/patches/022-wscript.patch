@@ -1,6 +1,6 @@
 --- a/source3/wscript
 +++ b/source3/wscript
-@@ -56,6 +56,12 @@ def set_options(opt):
+@@ -68,6 +68,12 @@ def set_options(opt):
                     help=("Directory under which libcephfs is installed"),
                     action="store", dest='libcephfs_dir', default=None)
  

@@ -30,7 +30,7 @@
  			"supported by backend");
 --- a/source3/smbd/server.c
 +++ b/source3/smbd/server.c
-@@ -1497,8 +1497,10 @@ extern void build_options(bool screen);
+@@ -1599,8 +1599,10 @@ extern void build_options(bool screen);
  		exit_daemon("Samba cannot init server id", EACCES);
  	}
  

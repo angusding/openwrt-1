@@ -111,7 +111,7 @@
  	}
 --- a/source3/rpc_server/srvsvc/srv_srvsvc_nt.c
 +++ b/source3/rpc_server/srvsvc/srv_srvsvc_nt.c
-@@ -1717,6 +1717,10 @@ WERROR _srvsvc_NetShareSetInfo(struct pi
+@@ -1724,6 +1724,10 @@ WERROR _srvsvc_NetShareSetInfo(struct pi
  	TALLOC_CTX *ctx = p->mem_ctx;
  	union srvsvc_NetShareInfo *info = r->in.info;
  
@@ -122,7 +122,7 @@
  	DEBUG(5,("_srvsvc_NetShareSetInfo: %d\n", __LINE__));
  
  	if (!r->in.share_name) {
-@@ -1961,6 +1965,10 @@ WERROR _srvsvc_NetShareAdd(struct pipes_
+@@ -1968,6 +1972,10 @@ WERROR _srvsvc_NetShareAdd(struct pipes_
  	SMB_STRUCT_STAT st;
  	TALLOC_CTX *ctx = p->mem_ctx;
  
@@ -133,7 +133,7 @@
  	DEBUG(5,("_srvsvc_NetShareAdd: %d\n", __LINE__));
  
  	if (r->out.parm_error) {
-@@ -2152,6 +2160,10 @@ WERROR _srvsvc_NetShareDel(struct pipes_
+@@ -2159,6 +2167,10 @@ WERROR _srvsvc_NetShareDel(struct pipes_
  	bool is_disk_op;
  	TALLOC_CTX *ctx = p->mem_ctx;
  
