@@ -41,6 +41,7 @@ CONFIGURE_ARGS += \
 	--disable-sulogin	\
 	--without-python	\
 	--without-udev		\
+	--without-readline	\
 	$(if $(CONFIG_PACKAGE_cal)$(CONFIG_PACKAGE_cfdisk)$(CONFIG_PACKAGE_setterm),--with-ncurses,--without-ncurses)
 
 TARGET_CFLAGS += $(FPIC) -std=gnu99
@@ -60,8 +61,8 @@ define Build/InstallDev
 
 	$(INSTALL_DIR) $(1)/usr/include/blkid
 	$(CP) $(PKG_BUILD_DIR)/libblkid/src/blkid.h $(1)/usr/include/blkid
-	$(INSTALL_DIR) $(1)/usr/include/libfdisk
-	$(CP) $(PKG_BUILD_DIR)/libfdisk/src/libfdisk.h $(1)/usr/include/libfdisk
+	$(INSTALL_DIR) $(1)/usr/include/fdisk
+	$(CP) $(PKG_BUILD_DIR)/libfdisk/src/libfdisk.h $(1)/usr/include/fdisk
 	$(INSTALL_DIR) $(1)/usr/include/libmount
 	$(CP) $(PKG_BUILD_DIR)/libmount/src/libmount.h $(1)/usr/include/libmount
 	$(INSTALL_DIR) $(1)/usr/include/uuid
@@ -94,14 +95,14 @@ endef
 
 define Package/libfdisk
 $(call Package/util-linux/Default)
-  DEPENDS:=+libblkid +libuuid
-  TITLE:=partition tables manipulating library
+  DEPENDS:=+libuuid +libblkid
+  TITLE:=partition manipulating library
   SECTION:=libs
   CATEGORY:=Libraries
 endef
 
 define Package/libfdisk/description
- The libfdisk library is used for manipulating with partition tables.
+  The libfdisk library is used for manipulating with partition tables. 
 endef
 
 define Package/libmount
@@ -190,7 +191,7 @@ endef
 define Package/cfdisk
 $(call Package/util-linux/Default)
   TITLE:=display or manipulate disk partition table
-  DEPENDS:= +libblkid +libncurses +libsmartcols
+  DEPENDS:= +libblkid +libncurses +libsmartcols +libfdisk +libmount
   SUBMENU:=disc
 endef
 
@@ -211,7 +212,7 @@ endef
 define Package/fdisk
 $(call Package/util-linux/Default)
   TITLE:=manipulate disk partition table
-  DEPENDS:= +libsmartcols +libfdisk
+  DEPENDS:= +libblkid +libsmartcols +libfdisk
   SUBMENU=disc
 endef
 
@@ -463,6 +464,11 @@ define Package/wipefs/description
  wipefs can erase filesystem, raid or partition table signatures (magic
  strings) from the specified device to make the signature invisible for
  libblkid.
+endef
+
+define Package/libfdisk/install
+	$(INSTALL_DIR) $(1)/usr/lib
+	$(CP) $(PKG_BUILD_DIR)/.libs/libfdisk.so* $(1)/usr/lib/
 endef
 
 define Package/libblkid/install
